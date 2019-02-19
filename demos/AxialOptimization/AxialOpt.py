@@ -28,7 +28,7 @@ fs = windse.LinearFunctionSpace(dom)
 print(fs.W.dim())
 
 ### Setup Boundary Conditions ###
-bc = windse.LinearInflow(dom,fs)
+bc = windse.PowerInflow(dom,fs)
 
 ### Generate the problem ###
 problem = windse.StabilizedProblem(dom,farm,fs,bc)

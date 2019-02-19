@@ -25,8 +25,8 @@ def initialize(loc):
     global LinearFunctionSpace
     from windse.FunctionSpaceManager import LinearFunctionSpace
 
-    global LinearInflow
-    from windse.BoundaryManager import LinearInflow
+    global PowerInflow
+    from windse.BoundaryManager import PowerInflow
 
     global StabilizedProblem
     from windse.ProblemManager import StabilizedProblem
