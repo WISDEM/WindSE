@@ -9,7 +9,7 @@ set_log_level(LogLevel.INFO)
 
 
 T = 500.0            # final time
-num_steps = 750  # number of time steps
+num_steps = 1000  # number of time steps
 dt = T / num_steps # time step size
 mu = 16        # dynamic viscosity
 rho = 1            # density
