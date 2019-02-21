@@ -136,15 +136,17 @@ class GenericWindFarm(object):
         self.my = []
         self.mz = []
         self.ma = []
+        self.myaw = []
         for i in range(self.numturbs):
             self.mx.append(Constant(self.x[i]))
             self.my.append(Constant(self.y[i]))
             self.mz.append(Constant(self.z[i]))
             self.ma.append(Constant(self.a[i]))
+            self.myaw.append(Constant(self.yaw[i]))
 
     def UpdateConstants(self):
         """
-        This functions updates the optimization constants
+        This function updates the optimization constants
         """
         # self.mx = self.x
         # self.my = self.y
@@ -154,6 +156,7 @@ class GenericWindFarm(object):
             self.my[i].assign(self.y[i])
             self.mz[i].assign(self.z[i])
             self.ma[i].assign(self.a[i])
+            self.myaw[i].assign(self.yaw[i])
 
 
     def CreateLists(self):
@@ -169,7 +172,7 @@ class GenericWindFarm(object):
 
     def RotateFarm(self,angle):
         """
-        This function rotates the position of each turbine. It doesn not change 
+        This function rotates the position of each turbine. It does not change 
         the yaw of the turbines. 
 
         Args:
@@ -236,7 +239,7 @@ class GenericWindFarm(object):
 
         return tf
 
-    def ModTurbineForce(self,V,mesh):
+    def ModTurbineForce(self,fs,mesh):
         """
         This function creates a turbine force by applying 
         a spacial kernel to each turbine. This kernel is 
@@ -263,11 +266,13 @@ class GenericWindFarm(object):
 
         x=SpatialCoordinate(mesh)
 
-        tf=Function(V)
+        tf_x=Function(fs.V0)
+        tf_y=Function(fs.V1)
+        tf_z=Function(fs.V2)
 
         for i in range(self.numturbs):
             x0 = [self.mx[i],self.my[i],self.mz[i]]
-            yaw = self.yaw[i]
+            yaw = self.myaw[i]
             W = self.W[i]/2.0
             R = self.RD[i]/2.0 
             ma = self.ma[i]
@@ -289,12 +294,18 @@ class GenericWindFarm(object):
             F = 4.*0.5*(pi*R**2.0)*ma/(1.-ma)*(r/R*sin(pi*r/R)+0.5) * 1/(.81831)
 
             ### Combine and add to the total ###
-            tf = tf + F*T*D
+            tf_x = tf_x + F*T*D*cos(yaw)
+            tf_y = tf_y + F*T*D*sin(yaw)
 
         ### Project Turbine Force to save on Assemble time ###
         print("Projecting Turbine Force")
-        tf = project(tf,V,solver_type='mumps')
+        tf_x = project(tf_x,fs.V0,solver_type='mumps')
+        tf_y = project(tf_y,fs.V1,solver_type='mumps')        
         print("Turbine Force Projected")
+
+        ### Assign the components to the turbine force ###
+        tf = Function(fs.V)
+        fs.VelocityAssigner.assign(tf,[tf_x,tf_y,tf_z])
 
         ### Save Turbine Force
         self.params.Save(tf,"tf",subfolder="functions/")
@@ -321,7 +332,7 @@ class GenericWindFarm(object):
 
         for i in range(self.numturbs):
             x0 = [self.mx[i],self.my[i],self.mz[i]]
-            yaw = self.yaw[i]
+            yaw = self.myaw[i]
             W = self.W[i]/2.0
             R = self.RD[i]/2.0 
             ma = self.ma[i]

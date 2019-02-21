@@ -38,7 +38,7 @@ class PowerInflow(object):
 
     .. math::
 
-        u_x=8.0 \\left( \\frac{z-z_0}{z_1-z_0} \\right)^{1/4}.
+        u_x=16.0 \\left( \\frac{z-z_0}{z_1-z_0} \\right)^{1/4}.
         
     where :math:`z_0` is the ground and :math:`z_1` is the top of the domain.
 
@@ -81,8 +81,8 @@ class PowerInflow(object):
         uy = Function(fs.V1)
         uz = Function(fs.V2)
         scaled_z_dist_val = np.abs(np.divide(z_dist_V0.vector()[:],(dom.z_range[1]-dom.z_range[0])))
-        ux.vector()[:] = np.multiply(8.0,np.power(scaled_z_dist_Q_val,1./4.))
-        # ux.vector()[:] = np.multiply(8.0,np.power(scaled_z_dist_val,1./4.))
+        ux.vector()[:] = np.multiply(16.0,np.power(scaled_z_dist_Q_val,1./4.))
+        # ux.vector()[:] = np.multiply(16.0,np.power(scaled_z_dist_val,1./4.))
 
         ### Assigning Velocity
         self.bc_velocity = Function(fs.V)
