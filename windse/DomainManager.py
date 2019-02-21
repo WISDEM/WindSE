@@ -259,11 +259,39 @@ class RectangleDomain(GenericDomain):
 
     def __init__(self):
         super(RectangleDomain, self).__init__()
-        start = Point(self.params["domain"]["x_range"][0], self.params["domain"]["y_range"][0])
-        stop  = Point(self.params["domain"]["x_range"][1], self.params["domain"]["y_range"][1])
-        self.mesh = RectangleMesh(start, stop, self.params["domain"]["nx"], self.params["domain"]["ny"])
 
-        raise TypeError("Not yet fully Implemented")
+        ### Initialize values from Options ###
+        self.x_range = self.params["domain"]["x_range"]
+        self.y_range = self.params["domain"]["y_range"]
+        self.nx = self.params["domain"]["nx"]
+        self.ny = self.params["domain"]["ny"]
+
+        ### Create mesh ###
+        start = Point(self.x_range[0], self.y_range[0])
+        stop  = Point(self.x_range[1], self.y_range[1])
+        self.mesh = RectangleMesh(start, stop, self.nx, self.ny)
+
+        ### Define Boundary Subdomains ###
+        front   = CompiledSubDomain("near(x[0], x0) && on_boundary",x0 = self.x_range[0])
+        back    = CompiledSubDomain("near(x[0], x1) && on_boundary",x1 = self.x_range[1])
+        left    = CompiledSubDomain("near(x[1], y0) && on_boundary",y0 = self.y_range[0])
+        right   = CompiledSubDomain("near(x[1], y1) && on_boundary",y1 = self.y_range[1])
+        self.boundary_subdomains = [front,back,left,right]
+
+        ### Generate the boundary markers for boundary conditions ###
+        self.boundary_markers = MeshFunction("size_t", self.mesh, self.mesh.topology().dim() - 1)
+        self.boundary_markers.set_all(0)
+        for i in range(len(self.boundary_subdomains)):
+            self.boundary_subdomains[i].mark(self.boundary_markers, i+1)
+
+    def Ground(self,x,y):
+        if (isinstance(x,list) and isinstance(y,list)) or (isinstance(x,np.ndarray) and isinstance(y,np.ndarray)):
+            nx = len(x)
+            ny = len(y)
+            if nx != ny:
+                raise ValueError("Length mismatch: len(x)="+repr(nx)+", len(y)="+repr(ny))
+            else:
+                return np.full(nx,0)
 
 class ImportedDomain(GenericDomain):
     """

@@ -92,3 +92,49 @@ class StabilizedProblem(GenericProblem):
         eps=Constant(0.01)
         stab = - eps*inner(grad(q), grad(p_next))*dx - eps*inner(grad(q), dot(grad(u_next), u_next))*dx 
         self.F += stab
+
+class TaylorHoodProblem2D(GenericProblem):
+    """
+    The TaylorHoodProblem2D sets up everything required for solving Navier-Stokes with 
+    in 2D
+
+    Args: 
+        domain (:meth:`windse.DomainManager.GenericDomain`): a windse domain object.
+        windfarm (:meth:`windse.WindFarmManager.GenericWindFarmm`): a windse windfarm object.
+        function_space (:meth:`windse.FunctionSpaceManager.GenericFunctionSpace`): a windse function space object.
+        boundary_conditions (:meth:`windse.BoundaryManager.GenericBoundary`): a windse boundary object.
+    """
+    def __init__(self,domain,windfarm,function_space,boundary_conditions):
+        super(TaylorHoodProblem2D, self).__init__(domain,windfarm,function_space,boundary_conditions)
+
+        ### Create the turbine force ###
+        print("Creating Turbine Force")
+        tf = self.farm.ModTurbineForce2D(self.fs,self.dom.mesh)
+        self.tf = tf
+        print("Turbine Force Created")
+
+        ### These constants will be moved into the params file ###
+        nu = Constant(.0005)
+        f = Constant((0.,0.))
+        mlDenom = 6
+
+        ### Create the test/trial/functions ###
+        self.up_next = Function(self.fs.W)
+        u_next,p_next = split(self.up_next)
+        v,q = TestFunctions(self.fs.W)
+
+        ### Set the initial guess ###
+        ### (this will become a separate function.)
+        self.up_next.assign(self.bd.u0)
+
+        ### Calculate the stresses and viscosities ###
+        S = sqrt(2.*inner(0.5*(grad(u_next)+grad(u_next).T),0.5*(grad(u_next)+grad(u_next).T)))
+
+        ### Create l_mix based on distance to the ground ###
+        l_mix = Constant(self.farm.HH[0]/mlDenom)
+
+        ### Calculate nu_T
+        nu_T=l_mix**2.*S
+
+        ### Create the functional ###
+        self.F = inner(grad(u_next)*u_next, v)*dx + (nu+nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(tf*(u_next[0]**2+u_next[1]**2),v)*dx 

@@ -29,7 +29,94 @@ if main_file != "sphinx-build":
 
     ### Check if we need dolfin_adjoint ###
     if windse_parameters["general"].get("dolfin_adjoint", False):
-        from dolfin_adjoint import *    
+        from dolfin_adjoint import *   
+
+class UniformInflow(object):
+    def __init__(self,dom,fs):
+        self.params = windse_parameters
+
+        ### Create the Velocity Function ###
+        ux = Function(fs.V0)
+        uy = Function(fs.V1)
+        uz = Function(fs.V2)
+        ux.vector()[:] = np.full(len(ux.vector()[:]),8)
+
+        ### Assigning Velocity
+        self.bc_velocity = Function(fs.V)
+        fs.VelocityAssigner.assign(self.bc_velocity,[ux,uy,uz])
+
+        ### Save Velocity because its interesting
+        self.params.Save(self.bc_velocity,"initialCondition",subfolder="functions/")
+
+        ### Create Pressure Boundary Function
+        self.bc_pressure = Function(fs.Q)
+
+        ### Create Initial Guess
+        self.u0 = Function(fs.W)
+        fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
+
+        ### Create the equations need for defining the boundary conditions ###
+        ### this is sloppy and will be cleaned up.
+        ### Inflow is always from the front
+        print("Creating Boundary Conditions")
+        bcTop    = self.bc_velocity
+        bcBottom = Constant((0.0,0.0,0.0))
+        bcFront  = self.bc_velocity
+        bcBack   = None
+        bcLeft   = self.bc_velocity
+        bcRight  = self.bc_velocity
+
+        self.bcs_eqns = [bcTop,bcBottom,bcFront,bcBack,bcLeft,bcRight] 
+
+        ### Create the boundary conditions ###
+        self.bcs = []
+        for i in range(len(self.bcs_eqns)):
+            if self.bcs_eqns[i] is not None:
+                self.bcs.append(DirichletBC(fs.W.sub(0), self.bcs_eqns[i], dom.boundary_markers, i+1))
+        print("Boundary Conditions Created")
+
+class UniformInflow2D(object):
+    def __init__(self,dom,fs):
+        self.params = windse_parameters
+
+        ### Create the Velocity Function ###
+        ux = Function(fs.V0)
+        uy = Function(fs.V1)
+        ux.vector()[:] = np.full(len(ux.vector()[:]),8)
+
+        ### Assigning Velocity
+        self.bc_velocity = Function(fs.V)
+        fs.VelocityAssigner.assign(self.bc_velocity,[ux,uy])
+
+        ### Save Velocity because its interesting
+        self.params.Save(self.bc_velocity,"initialCondition",subfolder="functions/")
+
+        ### Create Pressure Boundary Function
+        self.bc_pressure = Function(fs.Q)
+
+        ### Create Initial Guess
+        self.u0 = Function(fs.W)
+        fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
+
+        ### Create the equations need for defining the boundary conditions ###
+        ### this is sloppy and will be cleaned up.
+        ### Inflow is always from the front
+        print("Creating Boundary Conditions")
+        bcFront  = self.bc_velocity
+        bcBack   = None
+        bcLeft   = self.bc_velocity
+        bcRight  = self.bc_velocity
+
+        self.bcs_eqns = [bcFront,bcBack,bcLeft,bcRight] 
+
+        ### Create the boundary conditions ###
+        self.bcs = []
+        for i in range(len(self.bcs_eqns)):
+            if self.bcs_eqns[i] is not None:
+                self.bcs.append(DirichletBC(fs.W.sub(0), self.bcs_eqns[i], dom.boundary_markers, i+1))
+        print("Boundary Conditions Created")
+
+
 
 class PowerInflow(object):
     """

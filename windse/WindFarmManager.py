@@ -203,6 +203,19 @@ class GenericWindFarm(object):
         zrot = x[2]-x0[2]
         return [xrot,yrot,zrot]
 
+    def YawTurbine2D(self,x,x0,yaw):
+        """
+        This function yaws the turbines when creating the turbine force.
+
+        Args:
+            x (dolfin.SpacialCoordinate): the space variable, x
+            x0 (list): the location of the turbine to be yawed
+            yaw (float): the yaw value in radians
+        """
+        xrot = math.cos(yaw)*(x[0]-x0[0]) - math.sin(yaw)*(x[1]-x0[1])
+        yrot = math.sin(yaw)*(x[0]-x0[0]) + math.cos(yaw)*(x[1]-x0[1])
+        return [xrot,yrot]
+
     def RotatedTurbineForce(self,V,mesh):
         """
         This function Creates the turbine force. It is deprecated. 
@@ -312,6 +325,79 @@ class GenericWindFarm(object):
 
         return tf
 
+    def ModTurbineForce2D(self,fs,mesh):
+        """
+        This function creates a turbine force by applying 
+        a spacial kernel to each turbine. This kernel is 
+        created from the turbines location, yaw, thickness, diameter,
+        and force density. Currently, force density is limit to a scaled
+        version of 
+
+        .. math::
+
+            r\\sin(r),
+
+        where :math:`r` is the distance from the center of the turbine.
+
+        Args:
+            V (dolfin.FunctionSpace): The function space the turbine force will use.
+            mesh (dolfin.mesh): The mesh
+
+        Returns:
+            tf (dolfin.Function): the turbine force.
+
+        Todo:
+            * Setup a way to get the force density from file
+        """
+
+        x=SpatialCoordinate(mesh)
+
+        tf_x=Function(fs.V0)
+        tf_y=Function(fs.V1)
+
+        for i in range(self.numturbs):
+            x0 = [self.mx[i],self.my[i]]
+            yaw = self.myaw[i]
+            W = self.W[i]/2.0
+            R = self.RD[i]/2.0 
+            ma = self.ma[i]
+
+            ### Rotate and Shift the Turbine ###
+            xs = self.YawTurbine2D(x,x0,yaw)
+
+            ### Create the function that represents the Thickness of the turbine ###
+            T_norm = 1.902701539733748
+            T = exp(-pow((xs[0]/W),10.0))/(T_norm*W)
+
+            ### Create the function that represents the Disk of the turbine
+            D_norm = 2.884512175878827
+            D = exp(-pow((pow((xs[1]/R),2)),5.0))/(D_norm*R**2.0)
+
+            ### Create the function that represents the force ###
+            # F = 0.75*0.5*4.*A*self.ma[i]/(1.-self.ma[i])/beta
+            r = sqrt(xs[1]**2.0)
+            # F = 4.*0.5*(pi*R**2.0)*ma/(1.-ma)*(r/R*sin(pi*r/R)+0.5)
+            F = 4.*0.5*(pi*R**2.0)*ma/(1.-ma)*(r/R*sin(pi*r/R)+0.5)
+
+            ### Combine and add to the total ###
+            tf_x = tf_x + F*T*D*cos(yaw)
+            tf_y = tf_y + F*T*D*sin(yaw)
+
+        ### Project Turbine Force to save on Assemble time ###
+        print("Projecting Turbine Force")
+        tf_x = project(tf_x,fs.V0,solver_type='mumps')
+        tf_y = project(tf_y,fs.V1,solver_type='mumps')        
+        print("Turbine Force Projected")
+
+        ### Assign the components to the turbine force ###
+        tf = Function(fs.V)
+        fs.VelocityAssigner.assign(tf,[tf_x,tf_y])
+
+        ### Save Turbine Force
+        self.params.Save(tf,"tf",subfolder="functions/")
+
+        return tf
+
 
     def ModTurbineForceTest(self,V,mesh):
         """
@@ -392,20 +478,20 @@ class GridWindFarm(GenericWindFarm):
         super(GridWindFarm, self).__init__(dom)
 
         ### Initialize Values from Options ###
-        self.HH = self.params["wind_farm"]["HH"]
-        self.RD = self.params["wind_farm"]["RD"]
-        self.W = self.params["wind_farm"]["thickness"]
-        self.yaw = self.params["wind_farm"]["yaw"]
-        self.axial = self.params["wind_farm"]["axial"]
-        self.radius = self.RD/2.0
-
-        self.ex_x = self.params["wind_farm"]["ex_x"]
-        self.ex_y = self.params["wind_farm"]["ex_y"]
-
         self.grid_rows = self.params["wind_farm"]["grid_rows"]
         self.grid_cols = self.params["wind_farm"]["grid_cols"]
         self.numturbs = self.grid_rows * self.grid_cols
         self.params["wind_farm"]["numturbs"] = self.numturbs
+
+        self.HH = [self.params["wind_farm"]["HH"]]*self.numturbs
+        self.RD = [self.params["wind_farm"]["RD"]]*self.numturbs
+        self.W = [self.params["wind_farm"]["thickness"]]*self.numturbs
+        self.yaw = [self.params["wind_farm"]["yaw"]]*self.numturbs
+        self.axial = [self.params["wind_farm"]["axial"]]*self.numturbs
+        self.radius = self.RD[0]/2.0
+
+        self.ex_x = self.params["wind_farm"]["ex_x"]
+        self.ex_y = self.params["wind_farm"]["ex_y"]
         
         ### Create the x and y coords ###
         self.grid_x = np.linspace(self.ex_x[0]+self.radius,self.ex_x[1]-self.radius,self.grid_cols)
@@ -474,7 +560,7 @@ class RandomWindFarm(GenericWindFarm):
         self.W = self.params["wind_farm"]["thickness"]
         self.yaw = self.params["wind_farm"]["yaw"]
         self.axial = self.params["wind_farm"]["axial"]
-        self.radius = self.RD/2.0
+        # self.radius = self.RD/2.0
 
         self.ex_x = self.params["wind_farm"]["ex_x"]
         self.ex_y = self.params["wind_farm"]["ex_y"]

@@ -22,14 +22,14 @@ def initialize(loc):
     global GridWindFarm, RandomWindFarm, ImportedWindFarm
     from windse.WindFarmManager import GridWindFarm, RandomWindFarm, ImportedWindFarm
 
-    global LinearFunctionSpace
-    from windse.FunctionSpaceManager import LinearFunctionSpace
+    global LinearFunctionSpace, TaylorHoodFunctionSpace2D
+    from windse.FunctionSpaceManager import LinearFunctionSpace, TaylorHoodFunctionSpace2D
 
-    global PowerInflow
-    from windse.BoundaryManager import PowerInflow
+    global PowerInflow, UniformInflow, UniformInflow2D
+    from windse.BoundaryManager import PowerInflow, UniformInflow, UniformInflow2D
 
-    global StabilizedProblem
-    from windse.ProblemManager import StabilizedProblem
+    global StabilizedProblem, TaylorHoodProblem2D
+    from windse.ProblemManager import StabilizedProblem, TaylorHoodProblem2D
 
     global SteadySolver
     from windse.SolverManager import SteadySolver
