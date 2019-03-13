@@ -48,21 +48,21 @@ print(float(J))
 dJdma= compute_gradient(J, control, options={"newton_solver":{"linear_solver": "mumps"}})
 print([float(dd) for dd in dJdma])
 
-# def iter_cb(m):
-# 	# if MPI.rank(mpi_comm_world()) == 0:
-# 	print("m = ")
-# 	for mm in m:
-# 		print("Constant("+ str(mm)+ "),")
+def iter_cb(m):
+	# if MPI.rank(mpi_comm_world()) == 0:
+	print("m = ")
+	for mm in m:
+		print("Constant("+ str(mm)+ "),")
 
-# m_opt=minimize(rf, method="L-BFGS-B", options = {"disp": True}, bounds = bounds, callback = iter_cb)
-# print([float(mm) for mm in m_opt])
-# farm.ma = m_opt
-# solver.Solve()
+m_opt=minimize(rf, method="L-BFGS-B", options = {"disp": True}, bounds = bounds, callback = iter_cb)
+print([float(mm) for mm in m_opt])
+farm.ma = m_opt
+solver.Solve()
 
-# h = [Constant(0.001),Constant(0.001)]  # the direction of the perturbation
-# Jhat = ReducedFunctional(J, control)  
-# conv_rate = taylor_test(Jhat, farm.ma, h)
-# print(conv_rate)
+h = [Constant(0.001),Constant(0.001)]  # the direction of the perturbation
+Jhat = ReducedFunctional(J, control)  
+conv_rate = taylor_test(Jhat, farm.ma, h)
+print(conv_rate)
 
 ### Output Results ###
 solver.Save()

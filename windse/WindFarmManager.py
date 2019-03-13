@@ -317,11 +317,13 @@ class GenericWindFarm(object):
         print("Turbine Force Projected")
 
         ### Assign the components to the turbine force ###
-        tf = Function(fs.V)
-        fs.VelocityAssigner.assign(tf,[tf_x,tf_y,tf_z])
+        # tf = Function(fs.V)
+        # fs.VelocityAssigner.assign(tf,[tf_x,tf_y,tf_z])
 
         ### Save Turbine Force
-        self.params.Save(tf,"tf",subfolder="functions/")
+        # self.params.Save(tf,"tf",subfolder="functions/")
+
+        tf = as_vector((tf_x,tf_y,tf_z))
 
         return tf
 

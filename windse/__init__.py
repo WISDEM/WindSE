@@ -16,6 +16,9 @@ def initialize(loc):
 
     windse_parameters.Load(loc)
 
+    if windse_parameters["general"].get("dolfin_adjoint", False):
+        import windse.dolfin_adjoint_helper
+
     global BoxDomain, RectangleDomain, ImportedDomain
     from windse.DomainManager import BoxDomain, RectangleDomain, ImportedDomain
 
