@@ -144,6 +144,12 @@ class GenericWindFarm(object):
             self.ma.append(Constant(self.a[i]))
             self.myaw.append(Constant(self.yaw[i]))
 
+        for i in range(self.numturbs):
+            self.mx[i].rename("x"+repr(i),"x"+repr(i))
+            self.my[i].rename("y"+repr(i),"y"+repr(i))
+            self.mz[i].rename("z"+repr(i),"z"+repr(i))
+
+
     def UpdateConstants(self):
         """
         This function updates the optimization constants
@@ -313,15 +319,15 @@ class GenericWindFarm(object):
         ### Project Turbine Force to save on Assemble time ###
         print("Projecting Turbine Force")
         tf_x = project(tf_x,fs.V0,solver_type='mumps')
-        tf_y = project(tf_y,fs.V1,solver_type='mumps')        
+        tf_y = project(tf_y,fs.V1,solver_type='mumps')  
         print("Turbine Force Projected")
 
-        ### Assign the components to the turbine force ###
-        # tf = Function(fs.V)
-        # fs.VelocityAssigner.assign(tf,[tf_x,tf_y,tf_z])
+        ## Assign the components to the turbine force ###
+        tf = Function(fs.V)
+        fs.VelocityAssigner.assign(tf,[tf_x,tf_y,tf_z])
 
-        ### Save Turbine Force
-        # self.params.Save(tf,"tf",subfolder="functions/")
+        ## Save Turbine Force
+        self.params.Save(tf,"tf",subfolder="functions/")
 
         tf = as_vector((tf_x,tf_y,tf_z))
 

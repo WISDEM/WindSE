@@ -93,8 +93,13 @@ class SteadySolver(GenericSolver):
         """
         This solves the problem setup by the problem object.
         """
+
+        ### Add some helper functions to solver options ###
+        solver_parameters = {"newton_solver":{"linear_solver": "mumps","error_on_nonconvergence": False}}
+
         set_log_level(LogLevel.PROGRESS)
         print("Solving")
-        solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters={"newton_solver":{"linear_solver": "mumps","error_on_nonconvergence": False}})
+        # print(dir(self.problem.bd.bcs))
+        solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
         print("Solved")
         self.u_next,self.p_next = self.problem.up_next.split(True)

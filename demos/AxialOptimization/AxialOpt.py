@@ -4,7 +4,7 @@ import windse
 import numpy as np
 
 parameters['form_compiler']['quadrature_degree'] = 6
-set_log_level(10)
+set_log_level(15)
 ### Create an Instance of the Options ###
 windse.initialize("params.yaml")
 
@@ -40,6 +40,10 @@ solver.Solve()
 control = windse.CreateControl(farm.ma)
 bounds = windse.CreateAxialBounds(farm.ma)
 
+
+
+
+
 J=windse.PowerFunctional(problem.tf,solver.u_next)
 
 rf=ReducedFunctional(J,control)
@@ -49,10 +53,12 @@ dJdma= compute_gradient(J, control, options={"newton_solver":{"linear_solver": "
 print([float(dd) for dd in dJdma])
 
 def iter_cb(m):
-	# if MPI.rank(mpi_comm_world()) == 0:
-	print("m = ")
-	for mm in m:
-		print("Constant("+ str(mm)+ "),")
+    # if MPI.rank(mpi_comm_world()) == 0:
+    print("m = ")
+    for mm in m:
+        # print(type(mm))
+        print("Constant("+ str(mm)+ "),")
+    # exit()
 
 m_opt=minimize(rf, method="L-BFGS-B", options = {"disp": True}, bounds = bounds, callback = iter_cb)
 print([float(mm) for mm in m_opt])
@@ -61,6 +67,7 @@ solver.Solve()
 
 h = [Constant(0.001),Constant(0.001)]  # the direction of the perturbation
 Jhat = ReducedFunctional(J, control)  
+
 conv_rate = taylor_test(Jhat, farm.ma, h)
 print(conv_rate)
 

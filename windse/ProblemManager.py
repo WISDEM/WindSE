@@ -39,6 +39,9 @@ class GenericProblem(object):
         self.fs   = function_space 
         self.bd  = boundary_data
 
+        ### Append the farm ###
+        self.params.full_farm = self.farm
+
 class StabilizedProblem(GenericProblem):
     """
     The StabilizedProblem setup everything required for solving Navier-Stokes with 
@@ -55,9 +58,12 @@ class StabilizedProblem(GenericProblem):
 
         ### Create the turbine force ###
         print("Creating Turbine Force")
-        tf = self.farm.ModTurbineForce(self.fs,self.dom.mesh)
-        self.tf = tf
+        self.tf = self.farm.ModTurbineForce(self.fs,self.dom.mesh)
         print("Turbine Force Created")
+
+        ### add some helper items for dolfin_adjoint_helper.py ###
+        self.params.ground_fx = self.dom.Ground
+        self.params.full_hh = self.farm.HH
 
         ### These constants will be moved into the params file ###
         # nu_T_mod=Constant(.2)
@@ -84,9 +90,32 @@ class StabilizedProblem(GenericProblem):
         ### Calculate nu_T
         nu_T=l_mix**2.*S
 
+        xt = Constant(0.0)
+        yt = Constant(0.0)
+        zt = Constant(0.0)
+
+        # Gg = Function(self.fs.V0)
+
+        # Gg.vector()[:]+=1.0
+        # # print()(Gg([xt,yt,zt])+42.42)*
+        # class TestTR(UserExpression):
+        #     def __init__(self,x, y **kwargs):
+        #         self.x = x
+        #         self.y = y
+        #         super(TestTR,self).__init__(**kwargs)
+        #     def eval(self, values, x):
+        #         values[0] = dom.Ground(self.x,self.y)
+        #     def value_shape(self):
+        #         return ()
+        # FuncTest = TestTR(mx,my,degree=2)FuncTest([xt,yt,zt])*
+
+
+        # FunctTest = Expression("G(xm,ym)",G=dom.Ground,x=mx_1,y=my_1)
+        # FunctTest = Expression("G(xm,ym)",G=dom.Ground,x=mx_1,y=my_1)
+
 
         ### Create the functional ###
-        self.F = inner(grad(u_next)*u_next, v)*dx + (nu+nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(tf*(u_next[0]**2+u_next[1]**2),v)*dx 
+        self.F = inner(grad(u_next)*u_next, v)*dx + (nu+nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(self.tf*(u_next[0]**2+u_next[1]**2),v)*dx 
 
         ### Add in the Stabilizing term ###
         eps=Constant(0.01)

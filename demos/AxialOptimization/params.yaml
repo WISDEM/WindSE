@@ -1,7 +1,7 @@
 # General options
 general: 
     name: "Axial_Induction_Optimization"       # Name of the output folder
-    preappend_datetime: True  # Place the date and time before the folder name
+    preappend_datetime: False  # Place the date and time before the folder name
     save_file_type: "xdmf" # (xdmf, pvd, None)
     dolfin_adjoint: True
 

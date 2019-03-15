@@ -76,7 +76,7 @@ class Parameters(dict):
             for key in self[group]:
                 print("    "+key+":  "+" "*(max_length-len(key))+repr(self[group][key]))
 
-    def Save(self, file, filename, subfolder=""):
+    def Save(self, file, filename, subfolder="",t=0,reuse=None):
         """
         This function is used to save the various dolfin.Functions created
         by windse. It should only be accessed internally.
@@ -94,17 +94,28 @@ class Parameters(dict):
         ### Name the file in the meta data
         file.rename(filename,filename)
 
-        ### Make sure the folder exists
-        if not os.path.exists(self.folder+subfolder): os.makedirs(self.folder+subfolder)
+        if reuse is None:
+            ### Make sure the folder exists
+            if not os.path.exists(self.folder+subfolder): os.makedirs(self.folder+subfolder)
 
-        if self.save_file_type == "pvd":
-            file_string = self.folder+subfolder+filename+".pvd"
-            pvd = File(file_string)
-            pvd << file
-        elif self.save_file_type == "xdmf":
-            file_string = self.folder+subfolder+filename+".xdmf"
-            Xdmf = XDMFFile(file_string)
-            Xdmf.write(file)
-        print(filename+" Saved")
+            if self.save_file_type == "pvd":
+                file_string = self.folder+subfolder+filename+".pvd"
+                out = File(file_string)
+                out << (file,t)
+            elif self.save_file_type == "xdmf":
+                file_string = self.folder+subfolder+filename+".xdmf"
+                out = XDMFFile(file_string)
+                out.write(file,t)
+            print(filename+" Saved")
+
+            return out
+
+        else:
+            if self.save_file_type == "pvd":
+                reuse << (file,t)
+            elif self.save_file_type == "xdmf":
+                reuse.write(file,t)
+            print(filename+" Saved")
+
 
 windse_parameters = Parameters()
