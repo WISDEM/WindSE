@@ -143,7 +143,7 @@ class TaylorHoodProblem2D(GenericProblem):
         print("Turbine Force Created")
 
         ### These constants will be moved into the params file ###
-        nu = Constant(.0005)
+        nu = Constant(.005)
         f = Constant((0.,0.))
         mlDenom = 6
 

@@ -30,17 +30,33 @@ if main_file != "sphinx-build":
     if windse_parameters["general"].get("dolfin_adjoint", False):
         from dolfin_adjoint import *
     
-
-def CreateControl(m):
+def CreateLayoutControl(mx,my,farm):
     """
     Creates the controls from a list of values
 
     Args:
         m (list): a list of values to optimize.
     """
-    return [Control(mm) for mm in m]
+    m=[]
+    for i in range(farm.numturbs):
+        m.append(Control(mx[i]))
+        m.append(Control(my[i]))
 
-def CreateAxialBounds(m):
+    return m
+
+def CreateAxialControl(ma,farm):
+    """
+    Creates the controls from a list of values
+
+    Args:
+        m (list): a list of values to optimize.
+    """
+    m=[]
+    for i in range(farm.numturbs):
+        m.append(Control(ma[i]))
+    return m
+
+def CreateAxialBounds(ma,farm):
     """
     Creates the optimization bounds for axial induction.
 
@@ -49,12 +65,36 @@ def CreateAxialBounds(m):
     """
     ub=[]
     lb=[]
-    for i in range(len(m)):
+    for i in range(farm.numturbs):
         lb.append(Constant(0.))
         ub.append(Constant(0.75))
         
     bounds = [lb,ub]
     return bounds
+
+def CreateLayoutBounds(mx,my,farm):
+        ub=[]
+        lb=[]
+        for i in range(farm.numturbs):
+            lb.append(Constant((farm.ex_x[0] + farm.radius[i])))
+            lb.append(Constant((farm.ex_y[0] + farm.radius[i])))
+            ub.append(Constant((farm.ex_x[1] - farm.radius[i])))
+            ub.append(Constant((farm.ex_y[1] - farm.radius[i])))
+            
+        bounds = [lb,ub]
+        return bounds
+
+def SplitSolution(m_opt,numturbs):
+    mx_opt = []
+    my_opt = []
+    j=0
+    for i in range(numturbs):
+        mx_opt.append(m_opt[j])
+        j+=1
+        my_opt.append(m_opt[j])
+        j+=1
+        
+    return mx_opt,my_opt
 
 def PowerFunctional(tf,u):
     """

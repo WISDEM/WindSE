@@ -37,5 +37,5 @@ def initialize(loc):
     global SteadySolver
     from windse.SolverManager import SteadySolver
 
-    global CreateControl, CreateAxialBounds, PowerFunctional
-    from windse.OptimizationManager import CreateControl, CreateAxialBounds, PowerFunctional
+    global CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, SplitSolution, PowerFunctional
+    from windse.OptimizationManager import CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, SplitSolution, PowerFunctional

@@ -404,6 +404,8 @@ class GenericWindFarm(object):
         ### Save Turbine Force
         self.params.Save(tf,"tf",subfolder="functions/")
 
+        tf = as_vector((tf_x,tf_y))
+
         return tf
 
 
@@ -563,12 +565,13 @@ class RandomWindFarm(GenericWindFarm):
 
         ### Initialize Values from Options ###
         self.numturbs = self.params["wind_farm"]["numturbs"]
-        self.HH = self.params["wind_farm"]["HH"]
-        self.RD = self.params["wind_farm"]["RD"]
-        self.W = self.params["wind_farm"]["thickness"]
-        self.yaw = self.params["wind_farm"]["yaw"]
-        self.axial = self.params["wind_farm"]["axial"]
-        # self.radius = self.RD/2.0
+        
+        self.HH = [self.params["wind_farm"]["HH"]]*self.numturbs
+        self.RD = [self.params["wind_farm"]["RD"]]*self.numturbs
+        self.W = [self.params["wind_farm"]["thickness"]]*self.numturbs
+        self.yaw = [self.params["wind_farm"]["yaw"]]*self.numturbs
+        self.axial = [self.params["wind_farm"]["axial"]]*self.numturbs
+        self.radius = self.RD[0]/2.0
 
         self.ex_x = self.params["wind_farm"]["ex_x"]
         self.ex_y = self.params["wind_farm"]["ex_y"]
