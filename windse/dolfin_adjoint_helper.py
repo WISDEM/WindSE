@@ -112,9 +112,9 @@ def update_relative_heights(tape):
     for i in range(len(z_ind)):
         x_val = depends[x_ind[i]].saved_output.values()[0]
         y_val = depends[y_ind[i]].saved_output.values()[0]
-        z_val = windse_parameters.ground_fx(x_val,y_val) + windse_parameters.full_hh[i]
+        z_val = float(windse_parameters.ground_fx(x_val,y_val)) + windse_parameters.full_hh[i]
         depends[z_ind[i]].saved_output.assign(z_val)
-        # print(x_val,y_val,z_val)
+        print(x_val,y_val,z_val)
 
     # exit()
 
