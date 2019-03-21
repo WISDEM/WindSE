@@ -1,6 +1,6 @@
 # General options
 general: 
-    name: "3D"       # Name of the output folder
+    name: "3Dterrain"       # Name of the output folder
     preappend_datetime: False  # Place the date and time before the folder name
     save_file_type: "xdmf" # (xdmf, pvd, None)
     dolfin_adjoint: True
@@ -26,10 +26,15 @@ wind_farm:
 
 # Domain Constants for a Box Domain
 domain: 
-    #                      # Description           | Units
-    x_range: [-1200, 1200] # x-range of the domain | m
-    y_range: [-1200, 1200] # y-range of the domain | m
-    z_range: [0.04, 630]   # z-range of the domain | m
-    nx: 48                 # Number of x-nodes     | -
-    ny: 48                 # Number of y-nodes     | -
-    nz: 8                  # Number of z-nodes     | -
+    #            # Description               | Units
+    path: "Mesh_Data/"
+
+# # Domain Constants for a Box Domain
+# domain: 
+#     #                      # Description           | Units
+#     x_range: [-1200, 1200] # x-range of the domain | m
+#     y_range: [-1200, 1200] # y-range of the domain | m
+#     z_range: [0.04, 630]   # z-range of the domain | m
+#     nx: 48                 # Number of x-nodes     | -
+#     ny: 48                 # Number of y-nodes     | -
+#     nz: 8                  # Number of z-nodes     | -

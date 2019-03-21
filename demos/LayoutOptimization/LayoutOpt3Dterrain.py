@@ -7,23 +7,23 @@ parameters['form_compiler']['quadrature_degree'] = 6
 set_log_level(15)
 
 ### Create an Instance of the Options ###
-options = windse.initialize("params.yaml")
+options = windse.initialize("params3Dterrain.yaml")
 
 ### Generate Domain ###
-dom = windse.BoxDomain()
+dom = windse.ImportedDomain()
+# dom = windse.BoxDomain()
 
 ### Generate Wind Farm ###
-# farm = windse.GridWindFarm(dom)
-farm = windse.RandomWindFarm(dom)
+farm = windse.GridWindFarm(dom)
+# farm = windse.RandomWindFarm(dom)
 
 # farm.Plot(False)
 
 ### Warp the mesh and refine ###
-dom.Warp(200,0.75)
-# dom.WarpNonlinear(1.8)
-# region = [[farm.ex_x[0],dom.x_range[1]],farm.ex_y,farm.ex_z]
-# dom.Refine(1,region=region)
-dom.Save()
+# dom.Warp(200,0.75)
+region = [[-1000,1500],[-1000,1000],[0,300]]
+dom.Refine(1,region=region)
+# dom.Save()
 
 
 print(len(dom.mesh.coordinates()[:]))
@@ -49,7 +49,7 @@ solver.Solve()
 ### Output Results ###
 # solver.Save()
 
-####
+######
 # control = windse.CreateAxialControl(farm.ma,farm)
 # bounds = windse.CreateAxialBounds(farm.ma,farm)
 control = windse.CreateLayoutControl(farm.mx,farm.my,farm)
@@ -68,8 +68,8 @@ m_opt=minimize(rf, method="L-BFGS-B", options = {"disp": True}, bounds = bounds,
 # m_opt=minimize(rf, method="SLSQP", options = {"disp": True}, bounds = bounds, callback = iter_cb)
 
 print([float(mm) for mm in m_opt])
-farm.mx,farm.my=splitSolution(m_opt,farm.numturbs)
-# farm.ma = m_opt
+# farm.mx,farm.my=splitSolution(m_opt,farm.numturbs)
+farm.ma = m_opt
 solver.Solve()
 
 # mtest=[]

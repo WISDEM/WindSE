@@ -67,9 +67,10 @@ class StabilizedProblem(GenericProblem):
 
         ### These constants will be moved into the params file ###
         # nu_T_mod=Constant(.2)
-        nu = Constant(0.00005)
+        # nu = Constant(0.00005)
+        nu = Constant(2)
         f = Constant((0.,0.,0.))
-        mlDenom = 7
+        mlDenom = 6
 
         ### Create the test/trial/functions ###
         self.up_next = Function(self.fs.W)
