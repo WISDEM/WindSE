@@ -17,7 +17,7 @@ if main_file != "sphinx-build":
     import math
 
     ### Import the cumulative parameters ###
-    from windse import windse_parameters
+    from windse import windse_parameters, BaseHeight
 
     ### Check if we need dolfin_adjoint ###
     if windse_parameters["general"].get("dolfin_adjoint", False):
@@ -41,7 +41,7 @@ class GenericWindFarm(object):
         self.params = windse_parameters
         self.dom = dom
 
-    def Plot(self,show=True):
+    def Plot(self,show=True,filename="wind_farm"):
         """
         This function plots the locations of each wind turbine and
         saves the output to output/.../plots/
@@ -51,7 +51,7 @@ class GenericWindFarm(object):
         """
         ### Create the path names ###
         folder_string = self.params.folder+"/plots/"
-        file_string = self.params.folder+"/plots/wind_farm.pdf"
+        file_string = self.params.folder+"/plots/"+filename+".pdf"
 
         ### Check if folder exists ###
         if not os.path.exists(folder_string): os.makedirs(folder_string)
@@ -123,46 +123,38 @@ class GenericWindFarm(object):
         self.params["wind_farm"]["ex_y"] = self.ex_y
         self.params["wind_farm"]["ex_z"] = self.ex_z
 
+
+
     def CreateConstants(self):
         """
         This functions converts lists of locations and axial inductions
         into dolfin.Constants. This is useful in optimization.
         """
-        # self.mx = self.x
-        # self.my = self.y
-        # self.mz = self.z
-        # self.ma = self.a
         self.mx = []
         self.my = []
-        self.mz = []
         self.ma = []
         self.myaw = []
         for i in range(self.numturbs):
             self.mx.append(Constant(self.x[i]))
             self.my.append(Constant(self.y[i]))
-            self.mz.append(Constant(self.z[i]))
             self.ma.append(Constant(self.a[i]))
             self.myaw.append(Constant(self.yaw[i]))
 
         for i in range(self.numturbs):
             self.mx[i].rename("x"+repr(i),"x"+repr(i))
             self.my[i].rename("y"+repr(i),"y"+repr(i))
-            self.mz[i].rename("z"+repr(i),"z"+repr(i))
 
-
-    def UpdateConstants(self):
+    def CalculateHeights(self):
         """
-        This function updates the optimization constants
+        This function calculates the absolute heights of each turbine.
         """
-        # self.mx = self.x
-        # self.my = self.y
-        # self.mz = self.z
+        self.mz = np.zeros(self.numturbs)
+        self.z = np.zeros(self.numturbs)
+        self.ground = np.zeros(self.numturbs)
         for i in range(self.numturbs):
-            self.mx[i].assign(self.x[i])
-            self.my[i].assign(self.y[i])
-            self.mz[i].assign(self.z[i])
-            self.ma[i].assign(self.a[i])
-            self.myaw[i].assign(self.yaw[i])
+            self.mz[i] = BaseHeight(self.mx[i],self.my[i],self.dom.Ground)+float(self.HH[i])
+            self.z[i] = float(self.mz[i])
+            self.ground[i] = self.z[i] - self.HH[i]
 
 
     def CreateLists(self):
@@ -175,6 +167,7 @@ class GenericWindFarm(object):
         self.W = np.full(self.numturbs,self.W)
         self.radius = np.full(self.numturbs,self.radius)
         self.yaw = np.full(self.numturbs,self.yaw)
+        self.a = np.full(self.numturbs,self.axial)
 
     def RotateFarm(self,angle):
         """
@@ -502,6 +495,7 @@ class GridWindFarm(GenericWindFarm):
 
         self.ex_x = self.params["wind_farm"]["ex_x"]
         self.ex_y = self.params["wind_farm"]["ex_y"]
+
         
         ### Create the x and y coords ###
         self.grid_x = np.linspace(self.ex_x[0]+self.radius,self.ex_x[1]-self.radius,self.grid_cols)
@@ -512,26 +506,18 @@ class GridWindFarm(GenericWindFarm):
         self.x = self.x.flatten()
         self.y = self.y.flatten()
 
-        ### Calculate Ground Heights ###
-        self.ground = dom.Ground(self.x,self.y)
+        ### Convert the constant parameters to lists ###
+        self.CreateLists()
 
-        ### Create the z coords ###
-        self.z = np.full(self.numturbs,self.HH)
-        self.z = np.add(self.z, self.ground)
+        ### Convert the lists into lists of dolfin Constants ###
+        self.CreateConstants() 
+
+        ### Calculate Ground Heights ###
+        self.CalculateHeights()
 
         ### Update the extent in the z direction ###
         self.ex_z = [min(self.ground),max(self.z)+self.RD]
         self.params["wind_farm"]["ex_z"] = self.ex_z
-
-        ### Axial induction Factor ###
-        self.a = np.full(self.numturbs,self.axial)
-
-        ### Convert the lists into lists of dolfin Constants ###
-        ### This value should be added into the options ###
-        self.CreateConstants() 
-
-        ### Convert the constant parameters to lists ###
-        self.CreateLists()
 
 class RandomWindFarm(GenericWindFarm):
     """
@@ -577,7 +563,7 @@ class RandomWindFarm(GenericWindFarm):
         self.ex_y = self.params["wind_farm"]["ex_y"]
 
         self.seed = self.params["wind_farm"].get("seed",None)
-
+        
         ### Check if random seed is set ###
         if self.seed is not None:
             np.random.seed(self.seed)
@@ -585,22 +571,17 @@ class RandomWindFarm(GenericWindFarm):
         ### Create the x and y coords ###
         self.x = np.random.uniform(self.ex_x[0]+self.radius,self.ex_x[1]-self.radius,self.numturbs)
         self.y = np.random.uniform(self.ex_y[0]+self.radius,self.ex_y[1]-self.radius,self.numturbs)
-        
-        ### Calculate Ground Heights ###
-        self.ground = dom.Ground(self.x,self.y)
-
-        ### Create the z coords ###
-        self.z = np.full(self.numturbs,self.HH)
-        self.z = np.add(self.z, self.ground)
-
-        ### Axial induction Factor ###
-        self.a = np.full(self.numturbs,self.axial)
-
-        ### Convert the lists into lists of dolfin Constants ###
-        self.CreateConstants() 
 
         ### Convert the constant parameters to lists ###
         self.CreateLists()
+        
+        ### Convert the lists into lists of dolfin Constants ###
+        self.CreateConstants() 
+
+        ### Calculate Ground Heights ###
+        self.CalculateHeights()
+
+
 
 class ImportedWindFarm(GenericWindFarm):
     """
@@ -647,14 +628,13 @@ class ImportedWindFarm(GenericWindFarm):
         self.numturbs = len(self.x)
         self.params["wind_farm"]["numturbs"] = self.numturbs
 
+        ### Convert the lists into lists of dolfin Constants ###
+        self.CreateConstants() 
+
         ### Calculate Ground Heights ###
         print("Calculating Hub Heights")
-        self.ground   = dom.Ground(self.x,self.y)
-        self.z        = np.add(self.HH,self.ground)
+        self.CalculateHeights()
         print("Hub Heights Calculated")
 
         ### Calculate the extent of the farm ###
         self.CalculateExtents()
-
-        ### Convert the lists into lists of dolfin Constants ###
-        self.CreateConstants() 

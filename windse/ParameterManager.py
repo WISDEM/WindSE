@@ -76,45 +76,46 @@ class Parameters(dict):
             for key in self[group]:
                 print("    "+key+":  "+" "*(max_length-len(key))+repr(self[group][key]))
 
-    def Save(self, file, filename, subfolder="",t=0,reuse=None):
+    def Save(self, func, filename, subfolder="",n=0,file=None):
         """
         This function is used to save the various dolfin.Functions created
         by windse. It should only be accessed internally.
 
         Args:
-            file (dolfin.Function): The Function to be saved
+            func (dolfin.Function): The Function to be saved
             filename (str): the name of the function
 
         :Keyword Arguments:
             * **subfolder** (*str*): where to save the files within the output folder
+            * **n** (*float*): used for saving a series of output. Use n=0 for the first save.
 
         """
         print("Saving "+filename)
 
-        ### Name the file in the meta data
-        file.rename(filename,filename)
+        ### Name the function in the meta data
+        func.rename(filename,filename)
 
-        if reuse is None:
+        if file is None:
             ### Make sure the folder exists
             if not os.path.exists(self.folder+subfolder): os.makedirs(self.folder+subfolder)
 
             if self.save_file_type == "pvd":
                 file_string = self.folder+subfolder+filename+".pvd"
                 out = File(file_string)
-                out << (file,t)
+                out << (func,n)
             elif self.save_file_type == "xdmf":
                 file_string = self.folder+subfolder+filename+".xdmf"
                 out = XDMFFile(file_string)
-                out.write(file,t)
+                out.write(func,n)
             print(filename+" Saved")
 
             return out
 
         else:
             if self.save_file_type == "pvd":
-                reuse << (file,t)
+                file << (func,n)
             elif self.save_file_type == "xdmf":
-                reuse.write(file,t)
+                file.write(func,n)
             print(filename+" Saved")
 
 

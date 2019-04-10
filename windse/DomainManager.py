@@ -415,4 +415,4 @@ class ImportedDomain(GenericDomain):
                     z[i] = self.topography_interpolated(x[i],y[i])[0]
                 return z
         else:
-            return self.topography_interpolated(x,y)[0]
+            return self.topography_interpolated(x,y)[0][0]

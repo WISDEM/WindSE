@@ -56,31 +56,31 @@ control = windse.CreateLayoutControl(farm.mx,farm.my,farm)
 bounds = windse.CreateLayoutBounds(farm.mx,farm.my,farm)
 
 J=windse.PowerFunctional(problem.tf,solver.u_next)
-rf=ReducedFunctional(J,control)
+# rf=ReducedFunctional(J,control)
 
-def iter_cb(m):
-	# if MPI.rank(mpi_comm_world()) == 0:
-	print("m = ")
-	for mm in m:
-		print("Constant("+ str(mm)+ "),")
+# def iter_cb(m):
+# 	# if MPI.rank(mpi_comm_world()) == 0:
+# 	print("m = ")
+# 	for mm in m:
+# 		print("Constant("+ str(mm)+ "),")
 
-m_opt=minimize(rf, method="L-BFGS-B", options = {"disp": True}, bounds = bounds, callback = iter_cb)
-# m_opt=minimize(rf, method="SLSQP", options = {"disp": True}, bounds = bounds, callback = iter_cb)
+# m_opt=minimize(rf, method="L-BFGS-B", options = {"disp": True}, bounds = bounds, callback = iter_cb)
+# # m_opt=minimize(rf, method="SLSQP", options = {"disp": True}, bounds = bounds, callback = iter_cb)
 
-print([float(mm) for mm in m_opt])
-# farm.mx,farm.my=splitSolution(m_opt,farm.numturbs)
-farm.ma = m_opt
-solver.Solve()
+# print([float(mm) for mm in m_opt])
+# # farm.mx,farm.my=splitSolution(m_opt,farm.numturbs)
+# farm.ma = m_opt
+# solver.Solve()
 
-# mtest=[]
-# for i in range(farm.numturbs):
-#     mtest.append((farm.mx[i]))
-#     mtest.append((farm.my[i]))
+mtest=[]
+for i in range(farm.numturbs):
+    mtest.append((farm.mx[i]))
+    mtest.append((farm.my[i]))
 
-# h = [Constant(0.001)]*(2*farm.numturbs)  # the direction of the perturbation
-# Jhat = ReducedFunctional(J, control)  
-# conv_rate = taylor_test(Jhat, mtest, h)
-# print(conv_rate)
+h = [Constant(0.001)]*(2*farm.numturbs)  # the direction of the perturbation
+Jhat = ReducedFunctional(J, control)  
+conv_rate = taylor_test(Jhat, mtest, h)
+print(conv_rate)
 
 # ### Output Results ###
 solver.Save()

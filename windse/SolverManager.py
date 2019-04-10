@@ -42,6 +42,7 @@ class GenericSolver(object):
     def __init__(self,problem):
         self.params = windse_parameters
         self.problem  = problem
+        self.u_next,self.p_next = self.problem.up_next.split(True)
 
 
     def Plot(self):
@@ -68,14 +69,18 @@ class GenericSolver(object):
         plt.savefig(p_string)
         plt.show()
 
-    def Save(self):
+    def Save(self,n=None):
         """
         This function saves the mesh and boundary markers to output/.../solutions/
         """
 
         print("Saving Solutions")
-        self.params.Save(self.u_next,"velocity",subfolder="solutions/")
-        self.params.Save(self.p_next,"pressure",subfolder="solutions/")
+        if n is None or n == 0:
+            self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",n=n)
+            self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",n=n)
+        else:
+            self.params.Save(self.u_next,"velocity",subfolder="solutions/",n=n,file=self.u_file)
+            self.params.Save(self.p_next,"pressure",subfolder="solutions/",n=n,file=self.p_file)
         print("Solutions Saved")
 
 
@@ -97,7 +102,7 @@ class SteadySolver(GenericSolver):
         ### Add some helper functions to solver options ###
         solver_parameters = {"newton_solver":{"linear_solver": "mumps","error_on_nonconvergence": False}}
 
-        set_log_level(LogLevel.PROGRESS)
+        # set_log_level(LogLevel.PROGRESS)
         print("Solving")
         # print(dir(self.problem.bd.bcs))
         solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
