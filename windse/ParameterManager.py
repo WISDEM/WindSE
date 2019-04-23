@@ -76,7 +76,9 @@ class Parameters(dict):
             for key in self[group]:
                 print("    "+key+":  "+" "*(max_length-len(key))+repr(self[group][key]))
 
-    def Save(self, func, filename, subfolder="",n=0,file=None):
+
+
+    def Save(self, func, filename, subfolder="",val=0,file=None,filetype="default"):
         """
         This function is used to save the various dolfin.Functions created
         by windse. It should only be accessed internally.
@@ -92,31 +94,34 @@ class Parameters(dict):
         """
         print("Saving "+filename)
 
-        ### Name the function in the meta data
+        ### Name the function in the meta data, This should probably be done at creation
         func.rename(filename,filename)
+
+        if filetype == "default":
+            filetype = self.save_file_type
 
         if file is None:
             ### Make sure the folder exists
             if not os.path.exists(self.folder+subfolder): os.makedirs(self.folder+subfolder)
 
-            if self.save_file_type == "pvd":
+            if filetype == "pvd":
                 file_string = self.folder+subfolder+filename+".pvd"
                 out = File(file_string)
-                out << (func,n)
-            elif self.save_file_type == "xdmf":
+                out << (func,val)
+            elif filetype == "xdmf":
                 file_string = self.folder+subfolder+filename+".xdmf"
                 out = XDMFFile(file_string)
-                out.write(func,n)
-            print(filename+" Saved")
+                out.write(func,val)
 
             return out
 
         else:
-            if self.save_file_type == "pvd":
-                file << (func,n)
-            elif self.save_file_type == "xdmf":
-                file.write(func,n)
-            print(filename+" Saved")
-
+            if filetype == "pvd" or isinstance(func,type(Mesh)):
+                file << (func,val)
+            elif filetype == "xdmf":
+                file.write(func,val)
+        
+        print(filename+" Saved")
+        
 
 windse_parameters = Parameters()

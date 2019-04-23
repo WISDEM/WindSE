@@ -43,6 +43,7 @@ class GenericSolver(object):
         self.params = windse_parameters
         self.problem  = problem
         self.u_next,self.p_next = self.problem.up_next.split(True)
+        self.first_save = True
 
 
     def Plot(self):
@@ -69,20 +70,20 @@ class GenericSolver(object):
         plt.savefig(p_string)
         plt.show()
 
-    def Save(self,n=None):
+    def Save(self,val=0):
         """
         This function saves the mesh and boundary markers to output/.../solutions/
         """
 
         print("Saving Solutions")
-        if n is None or n == 0:
-            self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",n=n)
-            self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",n=n)
+        if self.first_save:
+            self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val)
+            self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val)
+            self.first_save = False
         else:
-            self.params.Save(self.u_next,"velocity",subfolder="solutions/",n=n,file=self.u_file)
-            self.params.Save(self.p_next,"pressure",subfolder="solutions/",n=n,file=self.p_file)
+            self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val,file=self.u_file)
+            self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val,file=self.p_file)
         print("Solutions Saved")
-
 
 class SteadySolver(GenericSolver):
     """

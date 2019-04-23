@@ -70,3 +70,4 @@ print([float(dd) for dd in dJdma])
 
 ### Output Results ###
 solver.Save()
+print("finished")
