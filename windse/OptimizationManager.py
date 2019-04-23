@@ -56,6 +56,18 @@ def CreateAxialControl(ma,farm):
         m.append(Control(ma[i]))
     return m
 
+def CreateYawControl(myaw,farm):
+    """
+    Creates the controls from a list of values
+
+    Args:
+        m (list): a list of values to optimize.
+    """
+    m=[]
+    for i in range(farm.numturbs):
+        m.append(Control(myaw[i]))
+    return m
+
 def CreateAxialBounds(ma,farm):
     """
     Creates the optimization bounds for axial induction.
@@ -83,6 +95,22 @@ def CreateLayoutBounds(mx,my,farm):
             
         bounds = [lb,ub]
         return bounds
+        
+def CreateYawBounds(myaw,farm):
+    """
+    Creates the optimization bounds for axial induction.
+
+    Args:
+        m (list): a list of controls
+    """
+    ub=[]
+    lb=[]
+    for i in range(farm.numturbs):
+        lb.append(Constant(-pi/4.))
+        ub.append(Constant(pi/4.))
+        
+    bounds = [lb,ub]
+    return bounds
 
 def SplitSolution(m_opt,numturbs):
     mx_opt = []
