@@ -38,9 +38,26 @@ class GenericProblem(object):
         self.farm = windfarm
         self.fs   = function_space 
         self.bd  = boundary_data
+        self.tf_first_save = True
 
         ### Append the farm ###
         self.params.full_farm = self.farm
+
+    def ChangeWindAngle(self, theta):
+        """
+        This function recomputes all necessary components for a new wind direction
+
+        Args: 
+            theta (float): The new wind angle in radians
+        """
+        self.dom.RecomputeBoundaryMarkers(theta)
+        self.bd.RecomputeVelocity(theta)
+        self.up_next.assign(self.bd.u0)
+    
+        tf_temp = self.farm.ModTurbineForce(self.fs,self.dom.mesh,delta_yaw=(theta-self.dom.wind_direction))
+        for i, com in enumerate(tf_temp):
+            self.tf[i].assign(com)
+        # self.tf.assign(tf_temp)
 
 class StabilizedProblem(GenericProblem):
     """
@@ -86,7 +103,7 @@ class StabilizedProblem(GenericProblem):
 
         ### Create l_mix based on distance to the ground ###
         l_mix = Function(self.fs.Q)
-        l_mix.vector()[:] = np.divide(self.bd.z_dist_Q.vector()[:],mlDenom)
+        l_mix.vector()[:] = np.divide(self.bd.z_dist_Q,mlDenom)
 
         ### Calculate nu_T
         nu_T=l_mix**2.*S

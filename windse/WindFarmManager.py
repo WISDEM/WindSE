@@ -40,6 +40,7 @@ class GenericWindFarm(object):
         ### save a reference of option and create local version specifically of domain options ###
         self.params = windse_parameters
         self.dom = dom
+        self.tf_first_save = True
 
     def Plot(self,show=True,filename="wind_farm"):
         """
@@ -73,14 +74,18 @@ class GenericWindFarm(object):
         if show:
             plt.show()
 
-    def SaveTurbineForce(self,filename="mesh",filetype="pvd"):
+    def SaveTurbineForce(self,val=0):
         """
-        This function saves the turbine force to be viewed later.
+        This function saves the turbine force if exists to output/.../functions/
+        """
 
-        Todo:
-            Needs to be implemented.
-        """
-        pass
+        print("Saving Turbine Force")
+        if self.tf_first_save:
+            self.tf_file = self.params.Save(self.tf,"tf",subfolder="functions/",val=val)
+            self.tf_first_save = False
+        else:
+            self.params.Save(self.tf,"tf",subfolder="functions/",val=val,file=self.tf_file)
+        print("Turbine Force Saved")
 
     def GetLocations(self):
         """
@@ -122,8 +127,6 @@ class GenericWindFarm(object):
         self.params["wind_farm"]["ex_x"] = self.ex_x
         self.params["wind_farm"]["ex_y"] = self.ex_y
         self.params["wind_farm"]["ex_z"] = self.ex_z
-
-
 
     def CreateConstants(self):
         """
@@ -188,6 +191,34 @@ class GenericWindFarm(object):
         self.CalculateExtents()
         self.UpdateConstants()
 
+    def RefineTurbines(self,num_refinements=1,radius_multiplyer=1.2):
+        cell_f = MeshFunction('bool', self.dom.mesh, self.dom.mesh.geometry().dim(),False)
+
+        radius = radius_multiplyer*np.array(self.RD)/2.0
+        turb_x = np.array(self.x)
+        turb_y = np.array(self.y)
+        if self.dom.finalized:
+            turb_z0 = np.array(self.ground)
+            turb_z1 = np.array(self.z)+radius
+        else:
+            turb_z0 = self.dom.z_range[0]
+            turb_z1 = np.max(self.HH)+radius
+
+        print("Marking Turbine Regions")
+        for cell in cells(self.dom.mesh):
+
+            in_circle = (cell.midpoint()[0]-turb_x)**2.0+(cell.midpoint()[1]-turb_y)**2.0<=radius**2.0
+            in_z = np.logical_and(turb_z0 <= cell.midpoint()[2], turb_z1 >= cell.midpoint()[2])
+            near_turbine = np.logical_and(in_circle, in_z)
+
+            if any(near_turbine):
+                cell_f[cell] = True
+
+        self.dom.Refine(num_refinements,cell_markers=cell_f)
+        self.CalculateHeights()
+
+
+
     def YawTurbine(self,x,x0,yaw):
         """
         This function yaws the turbines when creating the turbine force.
@@ -197,8 +228,8 @@ class GenericWindFarm(object):
             x0 (list): the location of the turbine to be yawed
             yaw (float): the yaw value in radians
         """
-        xrot = math.cos(yaw)*(x[0]-x0[0]) - math.sin(yaw)*(x[1]-x0[1])
-        yrot = math.sin(yaw)*(x[0]-x0[0]) + math.cos(yaw)*(x[1]-x0[1])
+        xrot =   math.cos(yaw)*(x[0]-x0[0]) + math.sin(yaw)*(x[1]-x0[1])
+        yrot = - math.sin(yaw)*(x[0]-x0[0]) + math.cos(yaw)*(x[1]-x0[1])
         zrot = x[2]-x0[2]
         return [xrot,yrot,zrot]
 
@@ -251,7 +282,7 @@ class GenericWindFarm(object):
 
         return tf
 
-    def ModTurbineForce(self,fs,mesh):
+    def ModTurbineForce(self,fs,mesh,delta_yaw=0.0):
         """
         This function creates a turbine force by applying 
         a spacial kernel to each turbine. This kernel is 
@@ -284,7 +315,7 @@ class GenericWindFarm(object):
 
         for i in range(self.numturbs):
             x0 = [self.mx[i],self.my[i],self.mz[i]]
-            yaw = self.myaw[i]
+            yaw = self.myaw[i]+delta_yaw
             W = self.W[i]/2.0
             R = self.RD[i]/2.0 
             ma = self.ma[i]
@@ -316,15 +347,10 @@ class GenericWindFarm(object):
         print("Turbine Force Projected")
 
         ## Assign the components to the turbine force ###
-        tf = Function(fs.V)
-        fs.VelocityAssigner.assign(tf,[tf_x,tf_y,tf_z])
+        self.tf = Function(fs.V)
+        fs.VelocityAssigner.assign(self.tf,[tf_x,tf_y,tf_z])
 
-        ## Save Turbine Force
-        self.params.Save(tf,"tf",subfolder="functions/")
-
-        tf = as_vector((tf_x,tf_y,tf_z))
-
-        return tf
+        return as_vector((tf_x,tf_y,tf_z))
 
     def ModTurbineForce2D(self,fs,mesh):
         """

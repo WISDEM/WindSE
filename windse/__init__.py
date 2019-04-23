@@ -22,8 +22,8 @@ def initialize(loc):
     else:
         from windse.helper_functions import BaseHeight
         
-    global BoxDomain, RectangleDomain, ImportedDomain
-    from windse.DomainManager import BoxDomain, RectangleDomain, ImportedDomain
+    global BoxDomain, CylinderDomain, RectangleDomain, ImportedDomain, InterpolatedCylinderDomain
+    from windse.DomainManager import BoxDomain, CylinderDomain, RectangleDomain, ImportedDomain, InterpolatedCylinderDomain
 
     global GridWindFarm, RandomWindFarm, ImportedWindFarm
     from windse.WindFarmManager import GridWindFarm, RandomWindFarm, ImportedWindFarm
@@ -37,8 +37,8 @@ def initialize(loc):
     global StabilizedProblem, TaylorHoodProblem2D
     from windse.ProblemManager import StabilizedProblem, TaylorHoodProblem2D
 
-    global SteadySolver
-    from windse.SolverManager import SteadySolver
+    global SteadySolver, MultiAngleSolver
+    from windse.SolverManager import SteadySolver, MultiAngleSolver
 
     global CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, SplitSolution, PowerFunctional
     from windse.OptimizationManager import CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, SplitSolution, PowerFunctional

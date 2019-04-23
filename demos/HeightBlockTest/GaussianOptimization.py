@@ -12,7 +12,6 @@ options = windse.initialize("GOparams.yaml")
 
 ### Generate Domain ###
 dom = windse.ImportedDomain()
-dom.Save()
 
 ### Generate Wind Farm ###
 farm = windse.GridWindFarm(dom)
@@ -20,7 +19,9 @@ farm.Plot(False)
 
 ### Warp the mesh and refine ###
 region = [[-1000,1500],[-1000,1000],[0,300]]
+# dom.Refine(1)
 dom.Refine(1,region=region)
+dom.Save()
 
 ### Function Space ###
 fs = windse.LinearFunctionSpace(dom)
@@ -36,7 +37,7 @@ solver = windse.SteadySolver(problem)
 solver.Solve()
 solver.Save(n=0)
 
-# ###### Optimization ######
+###### Optimization ######
 control = windse.CreateLayoutControl(farm.mx,farm.my,farm)
 bounds = windse.CreateLayoutBounds(farm.mx,farm.my,farm)
 

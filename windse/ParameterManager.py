@@ -16,7 +16,7 @@ if main_file != "sphinx-build":
     import datetime
     import numpy as np
     from math import ceil
-    from dolfin import File, HDF5File, XDMFFile, MPI
+    from dolfin import File, HDF5File, XDMFFile, MPI, Mesh
 
 ######################################################
 ### Collect all options and define general options ###
@@ -31,6 +31,7 @@ class Parameters(dict):
     """
     def __init__(self):
         super(Parameters, self).__init__()
+        self.current_tab = 0
 
     def Load(self, loc):
         """
@@ -43,6 +44,7 @@ class Parameters(dict):
         """
 
         ### Load the yaml file (requires PyYaml)
+        self.fprint("Loading and Setting up Parameters", special="header")
         self.update(yaml.load(open(loc)))
 
         ### Create Instances of the general options ###
@@ -50,10 +52,16 @@ class Parameters(dict):
         self.preappend_datetime = self["general"].get("preappend_datetime", False)
         self.save_file_type = self["general"].get("save_file_type", "pvd")
         self.dolfin_adjoint = self["general"].get("dolfin_adjoint", False)
+        self.outputs = self["general"].get("outputs", [])
+
+        ### Print some stats ###
+        self.fprint("Run Name: {0}".format(self.name), offset=1)
 
         ### Set up the folder Structure ###
+        timestamp=datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
+        fancytimestamp=datetime.datetime.today().strftime('%Y/%m/%d_%H:%M:%S')
         if self.preappend_datetime:
-            self.name = datetime.datetime.today().strftime('%Y%m%d_%H%M%S')+"-"+self.name
+            self.name = timestamp+"-"+self.name
             self["general"]["name"]=self.name
         self.folder = "output/"+self.name+"/"
         self["general"]["folder"] = self.folder
@@ -62,7 +70,12 @@ class Parameters(dict):
         # if self.save_file_type == "hdf5":
         #     self.Hdf=HDF5File(MPI.mpi_comm(), self.folder+"checkpoint/checkpoint.h5", "w")
 
-    def Print(self):
+        ### Print some more stuff
+        self.fprint("Run Time Stamp: {0}".format(fancytimestamp), offset=1)
+        self.fprint("Output Folder: {0}".format(self.folder), offset=1)
+        self.fprint("Parameters Setup", special="footer")
+
+    def Read(self):
         """
         This function reads the current state of the parameters object 
         and prints it in a easy to read way.
@@ -76,7 +89,7 @@ class Parameters(dict):
             for key in self[group]:
                 print("    "+key+":  "+" "*(max_length-len(key))+repr(self[group][key]))
 
-    def Save(self, func, filename, subfolder="",n=0,file=None):
+    def Save(self, func, filename, subfolder="",val=0,file=None,filetype="default"):
         """
         This function is used to save the various dolfin.Functions created
         by windse. It should only be accessed internally.
@@ -90,33 +103,68 @@ class Parameters(dict):
             * **n** (*float*): used for saving a series of output. Use n=0 for the first save.
 
         """
-        print("Saving "+filename)
+        self.fprint("Saving: {0}".format(filename), offset=1)
 
-        ### Name the function in the meta data
+        ### Name the function in the meta data, This should probably be done at creation
         func.rename(filename,filename)
+
+        if filetype == "default":
+            filetype = self.save_file_type
 
         if file is None:
             ### Make sure the folder exists
             if not os.path.exists(self.folder+subfolder): os.makedirs(self.folder+subfolder)
 
-            if self.save_file_type == "pvd":
+            if filetype == "pvd":
                 file_string = self.folder+subfolder+filename+".pvd"
                 out = File(file_string)
-                out << (func,n)
-            elif self.save_file_type == "xdmf":
+                out << (func,val)
+            elif filetype == "xdmf":
                 file_string = self.folder+subfolder+filename+".xdmf"
                 out = XDMFFile(file_string)
-                out.write(func,n)
-            print(filename+" Saved")
+                out.write(func,val)
 
             return out
 
         else:
-            if self.save_file_type == "pvd":
-                file << (func,n)
-            elif self.save_file_type == "xdmf":
-                file.write(func,n)
-            print(filename+" Saved")
+            if filetype == "pvd" or isinstance(func,type(Mesh)):
+                file << (func,val)
+            elif filetype == "xdmf":
+                file.write(func,val)
 
+    def fprint(self,string,tab=None,offset=0,special=None):
+        """
+        This is just a fancy print function that will tab according to where
+        we are in the solve
+
+        Args:
+            string (str): the string for printing
+
+        :Keyword Arguments:
+            * **tab** (*int*): the tab level
+
+        """
+        if tab is None:
+            tab = self.current_tab
+        
+        tab += offset 
+
+        if special=="header":
+            self.fprint("",tab=tab)
+        elif special =="footer":
+            self.fprint("",tab=tab+1)
+
+        rank = 0
+        if rank == 0:
+            tabbed = "|    "*tab
+            if isinstance(string,str):
+                string = tabbed+string
+            else:
+                string = tabbed+repr(string)
+            print(string)
+            # sys.stdout.flush()
+
+        if special=="header":
+            self.fprint("",tab=tab+1)
 
 windse_parameters = Parameters()

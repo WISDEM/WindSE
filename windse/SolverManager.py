@@ -43,6 +43,7 @@ class GenericSolver(object):
         self.params = windse_parameters
         self.problem  = problem
         self.u_next,self.p_next = self.problem.up_next.split(True)
+        self.first_save = True
 
 
     def Plot(self):
@@ -69,20 +70,29 @@ class GenericSolver(object):
         plt.savefig(p_string)
         plt.show()
 
-    def Save(self,n=None):
+    def Save(self,val=0):
         """
         This function saves the mesh and boundary markers to output/.../solutions/
         """
 
         print("Saving Solutions")
-        if n is None or n == 0:
-            self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",n=n)
-            self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",n=n)
+        if self.first_save:
+            self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val)
+            self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val)
+            self.first_save = False
         else:
-            self.params.Save(self.u_next,"velocity",subfolder="solutions/",n=n,file=self.u_file)
-            self.params.Save(self.p_next,"pressure",subfolder="solutions/",n=n,file=self.p_file)
+            self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val,file=self.u_file)
+            self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val,file=self.p_file)
         print("Solutions Saved")
 
+    def ChangeWindAngle(self,theta):
+        """
+        This function recomputes all necessary components for a new wind direction
+
+        Args: 
+            theta (float): The new wind angle in radians
+        """
+        self.problem.ChangeWindAngle(theta)
 
 class SteadySolver(GenericSolver):
     """
@@ -94,13 +104,29 @@ class SteadySolver(GenericSolver):
     def __init__(self,problem):
         super(SteadySolver, self).__init__(problem)
 
-    def Solve(self):
+    def Solve(self,iter_val=0):
         """
         This solves the problem setup by the problem object.
         """
 
+        ### Save Files before solve ###
+        if "mesh" in self.params.outputs:
+            self.problem.dom.Save(val=iter_val)
+        if "initial_guess" in self.params.outputs:
+            self.problem.bd.SaveInitialGuess(val=iter_val)
+        if "height" in self.params.outputs:
+            self.problem.bd.SaveHeight()
+        if "turbine_force" in self.params.outputs:
+            self.problem.farm.SaveTurbineForce(val=iter_val)
+
+
+
         ### Add some helper functions to solver options ###
-        solver_parameters = {"newton_solver":{"linear_solver": "mumps","error_on_nonconvergence": False}}
+        solver_parameters = {"newton_solver":{
+                             "linear_solver": "mumps", 
+                             "maximum_iterations": 15,
+                             "error_on_nonconvergence": False,
+                             "relaxation_parameter": 1.0}}
 
         # set_log_level(LogLevel.PROGRESS)
         print("Solving")
@@ -108,3 +134,32 @@ class SteadySolver(GenericSolver):
         solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
         print("Solved")
         self.u_next,self.p_next = self.problem.up_next.split(True)
+
+        ### Save solutions ###
+
+        if "solution" in self.params.outputs:
+            self.Save(val=iter_val)
+
+class MultiAngleSolver(SteadySolver):
+    """
+    This solver will solve the problem using the steady state solver for every
+    angle in angles.
+
+    Args: 
+        problem (:meth:`windse.ProblemManager.GenericProblem`): a windse problem object.
+        angles (list): A list of wind inflow directions.
+    """ 
+
+    def __init__(self,problem,angles):
+        super(MultiAngleSolver, self).__init__(problem)
+        self.orignal_solve = super(MultiAngleSolver, self).Solve
+        self.angles = angles
+
+    def Solve(self):
+        for i, theta in enumerate(self.angles):
+            print("Computing for Wind Angle: "+repr(theta))
+            if i > 0 or not near(theta,self.problem.dom.wind_direction):
+                print("Adjusting for Angle "+repr(i+1)+" of "+repr(len(self.angles)))
+                self.ChangeWindAngle(theta)
+            self.orignal_solve(iter_val=theta)
+            print("Finished Angle "+repr(i+1)+" of "+repr(len(self.angles)))
