@@ -38,15 +38,6 @@ problem = windse.StabilizedProblem(dom,farm,fs,bc)
 solver = windse.SteadySolver(problem)
 solver.Solve()
 
-<<<<<<< HEAD
-# control = windse.CreateControl(farm.myaw)
-=======
-control = windse.CreateYawControl(farm.myaw,farm)
->>>>>>> ja_windse_improvements
-# bounds = windse.CreateAxialBounds(farm.ma)
-
-# J=windse.PowerFunctional(problem.tf,solver.u_next)
-
 control = windse.CreateYawControl(farm.myaw, farm)
 bounds = windse.CreateYawBounds(farm.ma, farm)
 J=windse.PowerFunctional(problem.tf,solver.u_next)
