@@ -40,12 +40,13 @@ class GenericBoundary(object):
         self.fs = fs
         self.ig_first_save = True
         self.height_first_save = True
+        self.fprint = self.params.fprint
 
         ### Check if boundary information is given in the params file ###
         bcs_params = self.params.get("boundary_conditions",{})
         self.boundary_names = bcs_params.get("names", dom.boundary_names)
         self.boundary_types = bcs_params.get("types", dom.boundary_types)
-        self.wind_direction = bcs_params.get("wind_direction", dom.wind_direction)
+        self.wind_direction = dom.wind_direction
 
         ### Define the zero function based on domain dimension ###
         self.zeros = Constant(dom.mesh.topology().dim()*(0.0,))
@@ -55,7 +56,8 @@ class GenericBoundary(object):
         ### this is sloppy and will be cleaned up.
         ### Inflow is always from the front
 
-        print("Creating Boundary Conditions")
+        self.fprint("Applying Boundary Conditions",offset=1)
+
         ### Assemble boundary conditions ###
         bcs_eqns = []
         for bc_type, bs in self.boundary_types.items():
@@ -81,7 +83,8 @@ class GenericBoundary(object):
         for i in range(len(bcs_eqns)):
             if bcs_eqns[i][0] is not None:
                 self.bcs.append(DirichletBC(self.fs.W.sub(0), bcs_eqns[i][0], self.dom.boundary_markers, bcs_eqns[i][1]))
-        print("Boundary Conditions Created")
+        self.fprint("Boundary Conditions Applied",offset=1)
+        self.fprint("")
 
     # def RotateVelocity(self,ux,uy,uz,theta):
     #     ux_hat = ux.vector()[:]
@@ -115,6 +118,7 @@ class GenericBoundary(object):
         return [ux_com,uy_com,uz_com]
 
     def RecomputeVelocity(self,theta):
+        self.fprint("Recomputing Velocity")
         ux_com, uy_com, uz_com = self.RotateVelocity(theta)
         self.ux.vector()[:] = ux_com
         self.uy.vector()[:] = uy_com
@@ -130,8 +134,6 @@ class GenericBoundary(object):
         """
         This function saves the turbine force if exists to output/.../functions/
         """
-
-        print("Saving Initial Guess")
         if self.ig_first_save:
             self.u0_file = self.params.Save(self.bc_velocity,"u0",subfolder="functions/",val=val)
             self.p0_file = self.params.Save(self.bc_pressure,"p0",subfolder="functions/",val=val)
@@ -139,14 +141,11 @@ class GenericBoundary(object):
         else:
             self.params.Save(self.bc_velocity,"u0",subfolder="functions/",val=val,file=self.u0_file)
             self.params.Save(self.bc_pressure,"p0",subfolder="functions/",val=val,file=self.p0_file)
-        print("Initial Guess Saved")
 
     def SaveHeight(self,val=0):
         """
         This function saves the turbine force if exists to output/.../functions/
         """
-
-        print("Saving Height")
         if self.height_first_save:
             self.height_file = self.params.Save(self.height,"height",subfolder="functions/",val=val)
             self.depth_file = self.params.Save(self.depth,"depth",subfolder="functions/",val=val)
@@ -154,12 +153,16 @@ class GenericBoundary(object):
         else:
             self.params.Save(self.height,"height",subfolder="functions/",val=val,file=self.height_file)
             self.params.Save(self.depth,"depth",subfolder="functions/",val=val,file=self.depth_file)
-        print("Height Saved")
 
 class UniformInflow(GenericBoundary):
     def __init__(self,dom,fs):
         super(UniformInflow, self).__init__(dom,fs)
-
+        self.fprint("Setting Up Boundary Conditions",special="header")
+        self.fprint("Type: Uniform Inflow")
+        for key, values in self.boundary_types.items():
+            self.fprint("Boundary Type: {0}, Applied to:".format(key))
+            for value in values:
+                self.fprint(value,offset=1)
         ### Create the Velocity Function ###
         ux = Function(fs.V0)
         uy = Function(fs.V1)
@@ -167,6 +170,7 @@ class UniformInflow(GenericBoundary):
         ux.vector()[:] = np.full(len(ux.vector()[:]),8)
 
         ### Assigning Velocity
+        self.fprint("Computing Velocity Vector")
         self.bc_velocity = Function(fs.V)
         fs.VelocityAssigner.assign(self.bc_velocity,[ux,uy,uz])
 
@@ -174,22 +178,30 @@ class UniformInflow(GenericBoundary):
         self.bc_pressure = Function(fs.Q)
 
         ### Create Initial Guess
+        self.fprint("Assigning Initial Guess")
         self.u0 = Function(fs.W)
         fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
 
         ### Setup the boundary Conditions ###
         self.SetupBoundaries()
+        self.fprint("Boundary Condition Finished",special="footer")
 
 class UniformInflow2D(GenericBoundary):
     def __init__(self,dom,fs):
         super(UniformInflow2D, self).__init__(dom,fs)
-
+        self.fprint("Setting Up Boundary Conditions",special="header")
+        self.fprint("Type: Uniform Inflow")
+        for key, values in self.boundary_types.items():
+            self.fprint("Boundary Type: {0}, Applied to:".format(key))
+            for value in values:
+                self.fprint(value,offset=1)
         ### Create the Velocity Function ###
         ux = Function(fs.V0)
         uy = Function(fs.V1)
         ux.vector()[:] = np.full(len(ux.vector()[:]),8)
 
         ### Assigning Velocity
+        self.fprint("Computing Velocity Vector")
         self.bc_velocity = Function(fs.V)
         fs.VelocityAssigner.assign(self.bc_velocity,[ux,uy])
 
@@ -197,11 +209,13 @@ class UniformInflow2D(GenericBoundary):
         self.bc_pressure = Function(fs.Q)
 
         ### Create Initial Guess
+        self.fprint("Assigning Initial Guess")
         self.u0 = Function(fs.W)
         fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
 
         ### Setup the boundary Conditions ###
         self.SetupBoundaries()
+        self.fprint("Boundary Condition Setup",special="footer")
 
 
 class PowerInflow(GenericBoundary):
@@ -226,9 +240,17 @@ class PowerInflow(GenericBoundary):
     """
     def __init__(self,dom,fs):
         super(PowerInflow, self).__init__(dom,fs)
+        self.fprint("Setting Up Boundary Conditions",special="header")
+        self.fprint("Type: Inverse Power Law Inflow")
 
+        for key, values in self.boundary_types.items():
+            self.fprint("Boundary Type: {0}, Applied to:".format(key))
+            for value in values:
+                self.fprint(value,offset=1)
+        self.fprint("")
         ### Calculate the distance to the ground for the Q function space ###
         # self.z_dist_Q = Function(fs.Q)
+        self.fprint("Computing Distance to Ground")
         self.height = Function(fs.Q)
         self.depth = Function(fs.Q)
         Q_coords = fs.Q.tabulate_dof_coordinates()
@@ -250,6 +272,7 @@ class PowerInflow(GenericBoundary):
         z_dist_V0,z_dist_V1,z_dist_V2 = self.z_dist_V.split(True)
 
         ### Create the Velocity Function ###
+        self.fprint("Computing Velocity Vector")
         self.ux = Function(fs.V0)
         self.uy = Function(fs.V1)
         self.uz = Function(fs.V2)
@@ -271,11 +294,13 @@ class PowerInflow(GenericBoundary):
         self.bc_pressure = Function(self.fs.Q)
 
         ### Create Initial Guess
+        self.fprint("Assigning Initial Guess")
         self.u0 = Function(fs.W)
         self.fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
 
         ### Setup the boundary Conditions ###
         self.SetupBoundaries()
+        self.fprint("Boundary Condition Setup",special="footer")
 
 # class LogLayerInflow(object):
 #     def __init__(self,dom,fs):

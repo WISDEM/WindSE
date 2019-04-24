@@ -45,7 +45,7 @@ bc = windse.PowerInflow(dom,fs)
 problem = windse.StabilizedProblem(dom,farm,fs,bc)
 
 ### Solve ###
-angles = np.linspace(0,np.pi/2,5)
+angles = np.linspace(0,np.pi/2,2)
 solver = windse.MultiAngleSolver(problem,angles)
 solver.Solve()
 

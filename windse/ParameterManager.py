@@ -45,7 +45,7 @@ class Parameters(dict):
 
         ### Load the yaml file (requires PyYaml)
         self.fprint("Loading and Setting up Parameters", special="header")
-        self.update(yaml.load(open(loc)))
+        self.update(yaml.load(open(loc),Loader=yaml.SafeLoader))
 
         ### Create Instances of the general options ###
         self.name = self["general"].get("name", "Test")
@@ -55,7 +55,7 @@ class Parameters(dict):
         self.outputs = self["general"].get("outputs", [])
 
         ### Print some stats ###
-        self.fprint("Run Name: {0}".format(self.name), offset=1)
+        self.fprint("Run Name: {0}".format(self.name))
 
         ### Set up the folder Structure ###
         timestamp=datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
@@ -71,8 +71,8 @@ class Parameters(dict):
         #     self.Hdf=HDF5File(MPI.mpi_comm(), self.folder+"checkpoint/checkpoint.h5", "w")
 
         ### Print some more stuff
-        self.fprint("Run Time Stamp: {0}".format(fancytimestamp), offset=1)
-        self.fprint("Output Folder: {0}".format(self.folder), offset=1)
+        self.fprint("Run Time Stamp: {0}".format(fancytimestamp))
+        self.fprint("Output Folder: {0}".format(self.folder))
         self.fprint("Parameters Setup", special="footer")
 
     def Read(self):
@@ -103,7 +103,7 @@ class Parameters(dict):
             * **n** (*float*): used for saving a series of output. Use n=0 for the first save.
 
         """
-        self.fprint("Saving: {0}".format(filename), offset=1)
+        self.fprint("Saving: {0}".format(filename))
 
         ### Name the function in the meta data, This should probably be done at creation
         func.rename(filename,filename)
@@ -144,27 +144,39 @@ class Parameters(dict):
             * **tab** (*int*): the tab level
 
         """
-        if tab is None:
-            tab = self.current_tab
-        
-        tab += offset 
-
-        if special=="header":
-            self.fprint("",tab=tab)
-        elif special =="footer":
-            self.fprint("",tab=tab+1)
-
+        ### Check Processor ###
         rank = 0
         if rank == 0:
+            ### Check if tab length has been overridden
+            if tab is None:
+                tab = self.current_tab
+            
+            ### Check if we are starting or ending a section
+            if special=="header":
+                self.current_tab += 1
+                self.fprint("",tab=tab)
+            elif special =="footer":
+                self.current_tab -= 1
+                tab -= 1
+                self.fprint("",tab=tab+1)
+
+            ### Apply Offset if provided ###
+            tab += offset
+
+            ### Create Tabbed string
             tabbed = "|    "*tab
+
+            ### Apply Tabbed string
             if isinstance(string,str):
                 string = tabbed+string
             else:
                 string = tabbed+repr(string)
+
+            ### Print
             print(string)
             # sys.stdout.flush()
 
-        if special=="header":
-            self.fprint("",tab=tab+1)
+            if special=="header":
+                self.fprint("",tab=tab+1)
 
 windse_parameters = Parameters()

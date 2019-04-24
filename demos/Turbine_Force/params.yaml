@@ -2,6 +2,7 @@
 general: 
     name: "Turbine_test"       # Name of the output folder
     preappend_datetime: false  # Place the date and time before the folder name
+    outputs: ["mesh","initial_guess","height","turbine_force","solution"]
 
 # Wind Farm constants for a grid farm
 wind_farm: 

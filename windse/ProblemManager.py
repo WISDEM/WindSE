@@ -13,6 +13,7 @@ main_file = os.path.basename(__main__.__file__)
 if main_file != "sphinx-build":
     from dolfin import *
     import numpy as np
+    import time
 
     ### Import the cumulative parameters ###
     from windse import windse_parameters
@@ -39,6 +40,7 @@ class GenericProblem(object):
         self.fs   = function_space 
         self.bd  = boundary_data
         self.tf_first_save = True
+        self.fprint = self.params.fprint
 
         ### Append the farm ###
         self.params.full_farm = self.farm
@@ -50,13 +52,21 @@ class GenericProblem(object):
         Args: 
             theta (float): The new wind angle in radians
         """
+        adj_start = time.time()
+        self.fprint("Adjusting Wind Angle",special="header")
+        self.fprint("New Angle: {:1.8f} rads".format(theta))
         self.dom.RecomputeBoundaryMarkers(theta)
         self.bd.RecomputeVelocity(theta)
         self.up_next.assign(self.bd.u0)
     
-        tf_temp = self.farm.ModTurbineForce(self.fs,self.dom.mesh,delta_yaw=(theta-self.dom.wind_direction))
+        ### Need to accommodate 2D problems ###
+        tf_temp = self.farm.TurbineForce(self.fs,self.dom.mesh,delta_yaw=(theta-self.dom.wind_direction))
         for i, com in enumerate(tf_temp):
             self.tf[i].assign(com)
+
+        adj_stop = time.time()
+        self.fprint("Wind Angle Adjusted: {:1.2f} s".format(adj_stop-adj_start),special="footer")
+
         # self.tf.assign(tf_temp)
 
 class StabilizedProblem(GenericProblem):
@@ -72,11 +82,10 @@ class StabilizedProblem(GenericProblem):
     """
     def __init__(self,domain,windfarm,function_space,boundary_conditions):
         super(StabilizedProblem, self).__init__(domain,windfarm,function_space,boundary_conditions)
+        self.fprint("Setting Up Stabilized Problem",special="header")
 
         ### Create the turbine force ###
-        print("Creating Turbine Force")
-        self.tf = self.farm.ModTurbineForce(self.fs,self.dom.mesh)
-        print("Turbine Force Created")
+        self.tf = self.farm.TurbineForce(self.fs,self.dom.mesh)
 
         ### add some helper items for dolfin_adjoint_helper.py ###
         self.params.ground_fx = self.dom.Ground
@@ -88,7 +97,10 @@ class StabilizedProblem(GenericProblem):
         nu = Constant(2)
         f = Constant((0.,0.,0.))
         mlDenom = 6
-
+        eps=Constant(0.01)
+        self.fprint("Viscosity:                 {:1.2e}".format(float(nu)))
+        self.fprint("Mixing Length Scale:       {:1.2e}".format(float(mlDenom)))
+        self.fprint("Stabilization Coefficient: {:1.2e}".format(float(eps)))
         ### Create the test/trial/functions ###
         self.up_next = Function(self.fs.W)
         u_next,p_next = split(self.up_next)
@@ -136,9 +148,9 @@ class StabilizedProblem(GenericProblem):
         self.F = inner(grad(u_next)*u_next, v)*dx + (nu+nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(self.tf*(u_next[0]**2+u_next[1]**2),v)*dx 
 
         ### Add in the Stabilizing term ###
-        eps=Constant(0.01)
         stab = - eps*inner(grad(q), grad(p_next))*dx - eps*inner(grad(q), dot(grad(u_next), u_next))*dx 
         self.F += stab
+        self.fprint("Stabilized Problem Setup",special="footer")
 
 class TaylorHoodProblem2D(GenericProblem):
     """
@@ -153,17 +165,18 @@ class TaylorHoodProblem2D(GenericProblem):
     """
     def __init__(self,domain,windfarm,function_space,boundary_conditions):
         super(TaylorHoodProblem2D, self).__init__(domain,windfarm,function_space,boundary_conditions)
+        self.fprint("Setting Up Taylor-Hood Problem",special="header")
 
         ### Create the turbine force ###
-        print("Creating Turbine Force")
-        tf = self.farm.ModTurbineForce2D(self.fs,self.dom.mesh)
+        tf = self.farm.TurbineForce2D(self.fs,self.dom.mesh)
         self.tf = tf
-        print("Turbine Force Created")
 
         ### These constants will be moved into the params file ###
         nu = Constant(.005)
         f = Constant((0.,0.))
         mlDenom = 6
+        self.fprint("Viscosity:           {:1.2e}".format(float(nu)))
+        self.fprint("Mixing Length Scale: {:1.2e}".format(float(mlDenom)))
 
         ### Create the test/trial/functions ###
         self.up_next = Function(self.fs.W)
@@ -185,3 +198,5 @@ class TaylorHoodProblem2D(GenericProblem):
 
         ### Create the functional ###
         self.F = inner(grad(u_next)*u_next, v)*dx + (nu+nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(tf*(u_next[0]**2+u_next[1]**2),v)*dx 
+
+        self.fprint("Taylor-Hood Problem Setup",special="footer")

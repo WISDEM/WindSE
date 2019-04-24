@@ -13,6 +13,7 @@ main_file = os.path.basename(__main__.__file__)
 if main_file != "sphinx-build":
     from dolfin import *
     from sys import platform
+    import time
 
     ### Import the cumulative parameters ###
     from windse import windse_parameters
@@ -44,6 +45,7 @@ class GenericSolver(object):
         self.problem  = problem
         self.u_next,self.p_next = self.problem.up_next.split(True)
         self.first_save = True
+        self.fprint = self.params.fprint
 
 
     def Plot(self):
@@ -75,7 +77,6 @@ class GenericSolver(object):
         This function saves the mesh and boundary markers to output/.../solutions/
         """
 
-        print("Saving Solutions")
         if self.first_save:
             self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val)
             self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val)
@@ -83,7 +84,6 @@ class GenericSolver(object):
         else:
             self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val,file=self.u_file)
             self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val,file=self.p_file)
-        print("Solutions Saved")
 
     def ChangeWindAngle(self,theta):
         """
@@ -110,6 +110,7 @@ class SteadySolver(GenericSolver):
         """
 
         ### Save Files before solve ###
+        self.fprint("Saving Input Data",special="header")
         if "mesh" in self.params.outputs:
             self.problem.dom.Save(val=iter_val)
         if "initial_guess" in self.params.outputs:
@@ -118,6 +119,7 @@ class SteadySolver(GenericSolver):
             self.problem.bd.SaveHeight()
         if "turbine_force" in self.params.outputs:
             self.problem.farm.SaveTurbineForce(val=iter_val)
+        self.fprint("Finished",special="footer")
 
 
 
@@ -129,16 +131,18 @@ class SteadySolver(GenericSolver):
                              "relaxation_parameter": 1.0}}
 
         # set_log_level(LogLevel.PROGRESS)
-        print("Solving")
-        # print(dir(self.problem.bd.bcs))
+        self.fprint("Solving",special="header")
+        start = time.time()
         solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
-        print("Solved")
+        stop = time.time()
+        self.fprint("Solve Complete: {:1.2f} s".format(stop-start),special="footer")
         self.u_next,self.p_next = self.problem.up_next.split(True)
 
         ### Save solutions ###
-
         if "solution" in self.params.outputs:
+            self.fprint("Saving Solution",special="header")
             self.Save(val=iter_val)
+            self.fprint("Finished",special="footer")
 
 class MultiAngleSolver(SteadySolver):
     """
@@ -157,9 +161,9 @@ class MultiAngleSolver(SteadySolver):
 
     def Solve(self):
         for i, theta in enumerate(self.angles):
-            print("Computing for Wind Angle: "+repr(theta))
+            self.fprint("Performing Solve {:d} of {:d}".format(i+1,len(self.angles)),special="header")
+            self.fprint("Wind Angle: "+repr(theta))
             if i > 0 or not near(theta,self.problem.dom.wind_direction):
-                print("Adjusting for Angle "+repr(i+1)+" of "+repr(len(self.angles)))
                 self.ChangeWindAngle(theta)
             self.orignal_solve(iter_val=theta)
-            print("Finished Angle "+repr(i+1)+" of "+repr(len(self.angles)))
+            self.fprint("Finished Solve {:d} of {:d}".format(i+1,len(self.angles)),special="footer")

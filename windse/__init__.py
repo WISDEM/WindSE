@@ -40,5 +40,5 @@ def initialize(loc):
     global SteadySolver, MultiAngleSolver
     from windse.SolverManager import SteadySolver, MultiAngleSolver
 
-    global CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, SplitSolution, PowerFunctional
-    from windse.OptimizationManager import CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, SplitSolution, PowerFunctional
+    global CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, CreateYawControl, SplitSolution, PowerFunctional
+    from windse.OptimizationManager import CreateAxialControl, CreateAxialBounds, CreateLayoutControl, CreateLayoutBounds, CreateYawControl, SplitSolution, PowerFunctional
