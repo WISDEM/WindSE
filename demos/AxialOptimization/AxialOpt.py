@@ -4,7 +4,7 @@ import windse
 import numpy as np
 
 parameters['form_compiler']['quadrature_degree'] = 6
-set_log_level(15)
+set_log_level(20)
 ### Create an Instance of the Options ###
 windse.initialize("params.yaml")
 
@@ -37,8 +37,8 @@ problem = windse.StabilizedProblem(dom,farm,fs,bc)
 solver = windse.SteadySolver(problem)
 solver.Solve()
 
-control = windse.CreateControl(farm.ma)
-bounds = windse.CreateAxialBounds(farm.ma)
+control = windse.CreateAxialControl(farm.ma,farm)
+bounds = windse.CreateAxialBounds(farm.ma,farm)
 
 
 

@@ -1,8 +1,6 @@
 import windse
 import numpy as np
 
-parameters['form_compiler']['quadrature_degree'] = 6
-
 ### Initialize WindSE ###
 windse.initialize("params.yaml")
 
@@ -14,16 +12,16 @@ farm = windse.ImportedWindFarm(dom)
 farm.Plot()
 
 ### Warp the mesh and refine ###
-dom.Warp(80,80,0.75)
-# region = [[farm.ex_x[0],dom.x_range[1]],farm.ex_y,farm.ex_z]
-dom.Refine(1,local=True)
+dom.Warp(200,0.75)
+region = [[farm.ex_x[0],dom.x_range[1]],farm.ex_y,farm.ex_z]
+dom.Refine(1,region=region)
 dom.Save()
 
 ### Function Space ###
 fs = windse.LinearFunctionSpace(dom)
 
 ### Setup Boundary Conditions ###
-bc = windse.LinearInflow(dom,fs)
+bc = windse.PowerInflow(dom,fs)
 
 ### Generate the problem ###
 problem = windse.StabilizedProblem(dom,farm,fs,bc)

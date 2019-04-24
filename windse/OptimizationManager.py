@@ -55,6 +55,17 @@ def CreateAxialControl(ma,farm):
     for i in range(farm.numturbs):
         m.append(Control(ma[i]))
     return m
+    
+def CreateYawControl(myaw,farm):
+    """
+    Creates the controls from a list of values
+    Args:
+        m (list): a list of values to optimize.
+    """
+    m=[]
+    for i in range(farm.numturbs):
+        m.append(Control(myaw[i]))
+    return m
 
 def CreateYawControl(myaw,farm):
     """

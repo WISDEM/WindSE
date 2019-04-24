@@ -1,6 +1,6 @@
 # General options
 general: 
-    name: "Gaussian_Optimization"       # Name of the output folder
+    name: "CylinderDomain_Test"       # Name of the output folder
     preappend_datetime: False  # Place the date and time before the folder name
     save_file_type: "xdmf" # (xdmf, pvd, None)
     dolfin_adjoint: True
@@ -25,17 +25,22 @@ wind_farm:
     yaw: 0.0              # Yaw Angle                | rads
     axial: 0.33           # axial induction          |
 
-# Domain Constants for a Box Domain
-domain: 
-    #            # Description               | Units
-    path: "Mesh_Data/"
-
 # # Domain Constants for a Box Domain
 # domain: 
-#     #                      # Description           | Units
-#     x_range: [-1200, 1200] # x-range of the domain | m
-#     y_range: [-1200, 1200] # y-range of the domain | m
-#     z_range: [0.04, 630]   # z-range of the domain | m
-#     nx: 48                 # Number of x-nodes     | -
-#     ny: 48                 # Number of y-nodes     | -
-#     nz: 8                  # Number of z-nodes     | -
+#     #            # Description               | Units
+#     path: "Mesh_Data/"
+
+# Domain Constants for a Cylinder Domain
+domain: 
+    #                      # Description           | Units
+    wind_direction: 0.0
+    type: "mshr"
+    # type: "squircular"
+    # type: "elliptic"
+    # type: "stretch"
+    z_range: [0.04, 630]   # z-range of the domain | m
+    center: [0.0,0.0]
+    radius: 2500           # radius of base circle | m
+    nt: 72                # Number of radial nodes| -
+    nz: 10                 # Number of z nodes     | -
+    res: 35                # Resolution for mshr   | -

@@ -1,9 +1,9 @@
 # General options
 general: 
-    name: "2D"       # Name of the output folder
+    name: "MeshTest3D"       # Name of the output folder
     preappend_datetime: false  # Place the date and time before the folder name
     save_file_type: "xdmf" # (xdmf, pvd, None)
-    dolfin_adjoint: false
+    dolfin_adjoint: True
     outputs: ["mesh","initial_guess","height","turbine_force","solution"]
 
 # Wind Farm constants for a grid farm
@@ -22,7 +22,9 @@ wind_farm:
 # Domain Constants for a Box Domain
 domain: 
     #                      # Description           | Units
-    x_range: [-2500, 2500]        # x-range of the domain | m
-    y_range: [-2500, 2500]        # y-range of the domain | m
-    nx: 200                 # Number of x-nodes     | -
-    ny: 200                 # Number of y-nodes     | -
+    x_range: [-1000, 1000]        # x-range of the domain | m
+    y_range: [-1000, 1000]        # y-range of the domain | m
+    z_range: [0, 500]        # z-range of the domain | m
+    nx: 10                 # Number of x-nodes     | -
+    ny: 10                 # Number of y-nodes     | -
+    nz: 10                 # Number of z-nodes     | -

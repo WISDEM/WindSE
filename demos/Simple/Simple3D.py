@@ -15,13 +15,13 @@ farm.Plot()
 fs = windse.LinearFunctionSpace(dom)
 
 ### Setup Boundary Conditions ###
-bc = windse.LinearInflow(dom,fs)
+bc = windse.PowerInflow(dom,fs)
 
 ### Generate the problem ###
 problem = windse.StabilizedProblem(dom,farm,fs,bc)
 
 ### Solve ###
-solver = windse.DefaultSolver(problem)
+solver = windse.SteadySolver(problem)
 solver.Solve()
 
 ### Output Results ###

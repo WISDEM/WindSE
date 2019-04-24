@@ -4,7 +4,7 @@ import windse
 import numpy as np
 
 parameters['form_compiler']['quadrature_degree'] = 6
-set_log_level(10)
+set_log_level(20)
 
 ### Create an Instance of the Options ###
 windse.initialize("params2Dsmall.yaml")

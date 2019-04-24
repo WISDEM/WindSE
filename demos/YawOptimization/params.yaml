@@ -4,6 +4,7 @@ general:
     preappend_datetime: False  # Place the date and time before the folder name
     save_file_type: "pvd" # (xdmf, pvd, None)
     dolfin_adjoint: True
+    outputs: ["mesh","initial_guess","height","turbine_force","solution"]
 
 
 # Wind Farm constants for a grid farm
