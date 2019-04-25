@@ -9,7 +9,7 @@ dom.Save()
 
 ### Generate Wind Farm ###
 farm = windse.RandomWindFarm(dom)
-farm.Plot()
+farm.Plot(False)
 
 ### Function Space ###
 fs = windse.LinearFunctionSpace(dom)

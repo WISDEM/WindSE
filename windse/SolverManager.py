@@ -120,20 +120,39 @@ class SteadySolver(GenericSolver):
             self.problem.farm.SaveTurbineForce(val=iter_val)
         self.fprint("Finished",special="footer")
 
+        ### Define Jacobian ###
+        dU = TrialFunction(self.problem.fs.W)
+        J  = derivative(self.problem.F,  self.problem.up_next, dU)
+        ### Setup nonlinear solver ###
+        nonlinear_problem = NonlinearVariationalProblem(self.problem.F, self.problem.up_next, self.problem.bd.bcs, J)
+        nonlinear_solver  = NonlinearVariationalSolver(nonlinear_problem)
+
+        ### Set some parameters ###
+        solver_parameters = nonlinear_solver.parameters
+        solver_parameters["nonlinear_solver"] = "snes"
+        solver_parameters["snes_solver"]["linear_solver"] = "mumps"
+        solver_parameters["snes_solver"]["maximum_iterations"] = 50
+        solver_parameters["snes_solver"]["error_on_nonconvergence"] = False
+        solver_parameters["snes_solver"]["line_search"] = "bt" # Available: basic, bt, cp, l2, nleqerr
 
 
-        ### Add some helper functions to solver options ###
-        solver_parameters = {"newton_solver":{
-                             "linear_solver": "mumps", 
-                             "maximum_iterations": 15,
-                             "error_on_nonconvergence": False,
-                             "relaxation_parameter": 1.0}}
+
+        # ### Add some helper functions to solver options ###
+        # solver_parameters = {"newton_solver":{
+        #                      "linear_solver": "mumps", 
+        #                      "maximum_iterations": 50,
+        #                      "error_on_nonconvergence": False,
+        #                      "relaxation_parameter": 0.5}}
 
         # set_log_level(LogLevel.PROGRESS)
         self.fprint("Solving",special="header")
         start = time.time()
-        solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
+        iters, converged = nonlinear_solver.solve()
+        # solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
         stop = time.time()
+        self.fprint("Total Nonlinear Iterations: {:d}".format(iters))
+        self.fprint("Converged Successfully: {0}".format(converged))
+
         self.fprint("Solve Complete: {:1.2f} s".format(stop-start),special="footer")
         self.u_next,self.p_next = self.problem.up_next.split(True)
 

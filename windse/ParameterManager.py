@@ -17,12 +17,29 @@ if main_file != "sphinx-build":
     import numpy as np
     from math import ceil
     from dolfin import File, HDF5File, XDMFFile, MPI, Mesh
+    import sys
 
 ######################################################
 ### Collect all options and define general options ###
 ######################################################
 
 
+### THis is a special class that allows prints to go to file and terminal
+class Logger(object):
+    def __init__(self,filename):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a")
+        self.log.seek(0)
+        self.log.truncate()
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)  
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+        pass    
 
 class Parameters(dict):
     """
@@ -44,7 +61,6 @@ class Parameters(dict):
         """
 
         ### Load the yaml file (requires PyYaml)
-        self.fprint("Loading and Setting up Parameters", special="header")
         self.update(yaml.load(open(loc),Loader=yaml.SafeLoader))
 
         ### Create Instances of the general options ###
@@ -55,7 +71,6 @@ class Parameters(dict):
         self.outputs = self["general"].get("outputs", [])
 
         ### Print some stats ###
-        self.fprint("Run Name: {0}".format(self.name))
 
         ### Set up the folder Structure ###
         timestamp=datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
@@ -66,11 +81,20 @@ class Parameters(dict):
         self.folder = "output/"+self.name+"/"
         self["general"]["folder"] = self.folder
 
+        ### Make sure folder exists ###
+        if not os.path.exists(self.folder): os.makedirs(self.folder)
+        
+        ### Setup the logger ###
+        self.log = self.folder+"log.txt"
+        sys.stdout = Logger(self.log)
+
         ### Create checkpoint if required ###
         # if self.save_file_type == "hdf5":
         #     self.Hdf=HDF5File(MPI.mpi_comm(), self.folder+"checkpoint/checkpoint.h5", "w")
 
         ### Print some more stuff
+        self.fprint("General Parameter Information", special="header")
+        self.fprint("Run Name: {0}".format(self.name))
         self.fprint("Run Time Stamp: {0}".format(fancytimestamp))
         self.fprint("Output Folder: {0}".format(self.folder))
         self.fprint("Parameters Setup", special="footer")
@@ -174,7 +198,7 @@ class Parameters(dict):
 
             ### Print
             print(string)
-            # sys.stdout.flush()
+            sys.stdout.flush()
 
             if special=="header":
                 self.fprint("",tab=tab+1)
