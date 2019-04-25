@@ -120,39 +120,49 @@ class SteadySolver(GenericSolver):
             self.problem.farm.SaveTurbineForce(val=iter_val)
         self.fprint("Finished",special="footer")
 
-        ### Define Jacobian ###
-        dU = TrialFunction(self.problem.fs.W)
-        J  = derivative(self.problem.F,  self.problem.up_next, dU)
-        ### Setup nonlinear solver ###
-        nonlinear_problem = NonlinearVariationalProblem(self.problem.F, self.problem.up_next, self.problem.bd.bcs, J)
-        nonlinear_solver  = NonlinearVariationalSolver(nonlinear_problem)
+        ####################################################################
+        ### This is the better way to define a nonlinear problem but it 
+        ### doesn't play nice with dolfin_adjoint
+        # ### Define Jacobian ###
+        # dU = TrialFunction(self.problem.fs.W)
+        # J  = derivative(self.problem.F,  self.problem.up_next, dU)
 
-        ### Set some parameters ###
-        solver_parameters = nonlinear_solver.parameters
-        solver_parameters["nonlinear_solver"] = "snes"
-        solver_parameters["snes_solver"]["linear_solver"] = "mumps"
-        solver_parameters["snes_solver"]["maximum_iterations"] = 50
-        solver_parameters["snes_solver"]["error_on_nonconvergence"] = False
-        solver_parameters["snes_solver"]["line_search"] = "bt" # Available: basic, bt, cp, l2, nleqerr
+        # ### Setup nonlinear solver ###
+        # nonlinear_problem = NonlinearVariationalProblem(self.problem.F, self.problem.up_next, self.problem.bd.bcs, J)
+        # nonlinear_solver  = NonlinearVariationalSolver(nonlinear_problem)
 
+        # ### Set some parameters ###
+        # solver_parameters = nonlinear_solver.parameters
+        # solver_parameters["nonlinear_solver"] = "snes"
+        # solver_parameters["snes_solver"]["linear_solver"] = "mumps"
+        # solver_parameters["snes_solver"]["maximum_iterations"] = 50
+        # solver_parameters["snes_solver"]["error_on_nonconvergence"] = False
+        # solver_parameters["snes_solver"]["line_search"] = "bt" # Available: basic, bt, cp, l2, nleqerr
+
+        ### Solve the problem ###
+        # self.fprint("Solving",special="header")
+        # start = time.time()
+        # iters, converged = nonlinear_solver.solve()
+        # stop = time.time()
+        # self.fprint("Total Nonlinear Iterations: {:d}".format(iters))
+        # self.fprint("Converged Successfully: {0}".format(converged))
+        ####################################################################
 
 
         # ### Add some helper functions to solver options ###
-        # solver_parameters = {"newton_solver":{
-        #                      "linear_solver": "mumps", 
-        #                      "maximum_iterations": 50,
-        #                      "error_on_nonconvergence": False,
-        #                      "relaxation_parameter": 0.5}}
+        solver_parameters = {"nonlinear_solver": "snes",
+                             "snes_solver": {
+                             "linear_solver": "mumps", 
+                             "maximum_iterations": 50,
+                             "error_on_nonconvergence": False,
+                             "line_search": "bt"
+                             }}
 
-        # set_log_level(LogLevel.PROGRESS)
+        ### Solve the problem ###
         self.fprint("Solving",special="header")
         start = time.time()
-        iters, converged = nonlinear_solver.solve()
-        # solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
+        solve(self.problem.F == 0, self.problem.up_next, self.problem.bd.bcs, solver_parameters=solver_parameters)
         stop = time.time()
-        self.fprint("Total Nonlinear Iterations: {:d}".format(iters))
-        self.fprint("Converged Successfully: {0}".format(converged))
-
         self.fprint("Solve Complete: {:1.2f} s".format(stop-start),special="footer")
         self.u_next,self.p_next = self.problem.up_next.split(True)
 
