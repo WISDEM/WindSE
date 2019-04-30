@@ -26,10 +26,10 @@ dom.Warp(200,0.75)
 print(np.unique(dom.mesh.coordinates()[:,2]))
 # region = [[-1500,1500],[-1500,1500],[0,300]]
 region = [[1500],[0.0,0.0],[0,300]]
-dom.Refine(2,region=region,region_type="circle")
+dom.Refine(1,region=region,region_type="circle")
 
 ### Refine Around the Turbines
-farm.RefineTurbines(radius_multiplyer=1.4) 
+farm.RefineTurbines(num_refinements=1,radius_multiplyer=1.4) 
 
 ### Function Space ###
 fs = windse.LinearFunctionSpace(dom)
@@ -45,11 +45,13 @@ bc = windse.PowerInflow(dom,fs)
 problem = windse.StabilizedProblem(dom,farm,fs,bc)
 
 ### Solve ###
-angles = np.linspace(0,np.pi/2,2)
-solver = windse.MultiAngleSolver(problem,angles)
+# angles = np.linspace(0,np.pi/2,2)
+# solver = windse.MultiAngleSolver(problem,angles)
+# solver.Solve()
+
+solver = windse.SteadySolver(problem)
 solver.Solve()
 
-# solver = windse.SteadySolver(problem)
 # # exit()
 # solver.Solve(iter_val=0.0)
 

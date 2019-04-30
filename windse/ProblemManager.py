@@ -94,9 +94,9 @@ class StabilizedProblem(GenericProblem):
         ### These constants will be moved into the params file ###
         # nu_T_mod=Constant(.2)
         # nu = Constant(0.00005)
-        nu = Constant(2)
+        nu = Constant(1)
         f = Constant((0.,0.,0.))
-        mlDenom = 6
+        mlDenom = 8.
         eps=Constant(0.01)
         self.fprint("Viscosity:                 {:1.2e}".format(float(nu)))
         self.fprint("Mixing Length Scale:       {:1.2e}".format(float(mlDenom)))
@@ -118,7 +118,7 @@ class StabilizedProblem(GenericProblem):
         l_mix.vector()[:] = np.divide(self.bd.z_dist_Q,mlDenom)
 
         ### Calculate nu_T
-        nu_T=l_mix**2.*S
+        self.nu_T=l_mix**2.*S
 
         xt = Constant(0.0)
         yt = Constant(0.0)
@@ -145,7 +145,7 @@ class StabilizedProblem(GenericProblem):
 
 
         ### Create the functional ###
-        self.F = inner(grad(u_next)*u_next, v)*dx + (nu+nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(self.tf*(u_next[0]**2+u_next[1]**2),v)*dx 
+        self.F = inner(grad(u_next)*u_next, v)*dx + (nu+self.nu_T)*inner(grad(u_next), grad(v))*dx - inner(div(v),p_next)*dx - inner(div(u_next),q)*dx - inner(f,v)*dx + inner(self.tf*(u_next[0]**2+u_next[1]**2),v)*dx 
 
         ### Add in the Stabilizing term ###
         stab = - eps*inner(grad(q), grad(p_next))*dx - eps*inner(grad(q), dot(grad(u_next), u_next))*dx 

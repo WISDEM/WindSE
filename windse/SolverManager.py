@@ -44,6 +44,7 @@ class GenericSolver(object):
         self.params = windse_parameters
         self.problem  = problem
         self.u_next,self.p_next = self.problem.up_next.split(True)
+        self.nu_T = self.problem.nu_T
         self.first_save = True
         self.fprint = self.params.fprint
 
@@ -79,10 +80,12 @@ class GenericSolver(object):
         if self.first_save:
             self.u_file = self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val)
             self.p_file = self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val)
+            self.nuT_file = self.params.Save(self.nu_T,"eddy_viscosity",subfolder="solutions/",val=val)
             self.first_save = False
         else:
             self.params.Save(self.u_next,"velocity",subfolder="solutions/",val=val,file=self.u_file)
             self.params.Save(self.p_next,"pressure",subfolder="solutions/",val=val,file=self.p_file)
+            self.params.Save(self.nu_T,"eddy_viscosity",subfolder="solutions/",val=val,file=self.nuT_file)
 
     def ChangeWindAngle(self,theta):
         """
@@ -165,6 +168,7 @@ class SteadySolver(GenericSolver):
         stop = time.time()
         self.fprint("Solve Complete: {:1.2f} s".format(stop-start),special="footer")
         self.u_next,self.p_next = self.problem.up_next.split(True)
+        self.nu_T = project(self.problem.nu_T,self.problem.fs.Q)
 
         ### Save solutions ###
         if "solution" in self.params.outputs:
