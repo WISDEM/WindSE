@@ -92,10 +92,11 @@ class StabilizedProblem(GenericProblem):
         self.params.full_hh = self.farm.HH
 
         ### These constants will be moved into the params file ###
-        # nu_T_mod=Constant(.2)
-        # nu = Constant(0.00005)
-        nu = Constant(1)
+        nu = Constant(.1)
         f = Constant((0.,0.,0.))
+        vonKarman=0.41
+        lmax=15
+
         mlDenom = 8.
         eps=Constant(0.01)
         self.fprint("Viscosity:                 {:1.2e}".format(float(nu)))
@@ -111,11 +112,11 @@ class StabilizedProblem(GenericProblem):
         self.up_next.assign(self.bd.u0)
 
         ### Calculate the stresses and viscosities ###
-        S = sqrt(2.*inner(0.5*(grad(u_next)+grad(u_next).T),0.5*(grad(u_next)+grad(u_next).T)))
+        S = sqrt(inner(0.5*(grad(u_next)+grad(u_next).T),0.5*(grad(u_next)+grad(u_next).T)))
 
-        ### Create l_mix based on distance to the ground ###
+        ### Create l_mix based on distance to the ground per https://doi.org/10.5194/wes-4-127-2019###
         l_mix = Function(self.fs.Q)
-        l_mix.vector()[:] = np.divide(self.bd.z_dist_Q,mlDenom)
+        l_mix.vector()[:] = np.divide(vonKarman*self.bd.z_dist_Q,(1.+np.divide(vonKarman*self.bd.z_dist_Q,lmax)))
 
         ### Calculate nu_T
         self.nu_T=l_mix**2.*S

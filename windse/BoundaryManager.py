@@ -225,7 +225,7 @@ class PowerInflow(GenericBoundary):
 
     .. math::
 
-        u_x=16.0 \\left( \\frac{z-z_0}{z_1-z_0} \\right)^{1/4}.
+        u_x=8.0 \\left( \\frac{z-z_0}{z_1-z_0} \\right)^{0.15}.
         
     where :math:`z_0` is the ground and :math:`z_1` is the top of the domain.
 
@@ -241,7 +241,7 @@ class PowerInflow(GenericBoundary):
     def __init__(self,dom,fs):
         super(PowerInflow, self).__init__(dom,fs)
         self.fprint("Setting Up Boundary Conditions",special="header")
-        self.fprint("Type: Inverse Power Law Inflow")
+        self.fprint("Type: Power Law Inflow")
 
         for key, values in self.boundary_types.items():
             self.fprint("Boundary Type: {0}, Applied to:".format(key))
@@ -277,7 +277,7 @@ class PowerInflow(GenericBoundary):
         self.uy = Function(fs.V1)
         self.uz = Function(fs.V2)
         scaled_z_dist_val = np.abs(np.divide(z_dist_V0.vector()[:],(dom.z_range[1]-dom.z_range[0])))
-        self.reference_velocity = np.multiply(8.0,np.power(scaled_z_dist_Q_val,1./4.))
+        self.reference_velocity = np.multiply(8.0,np.power(scaled_z_dist_Q_val,.15))
         # ux.vector()[:] = np.multiply(16.0,np.power(scaled_z_dist_val,1./4.))
 
         ux_com, uy_com, uz_com = self.RotateVelocity(self.wind_direction)
