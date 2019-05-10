@@ -1,3 +1,9 @@
+## DEPRECATED 
+
+THIS REPOSITORY IS DEPRECATED AND WILL BE DELETED AT THE END OF 2019. UNTIL THEN, IT WILL BE KEPT IN READ-ONLY MODE AND NO LONGER MAINTAINED.
+
+The active WindSE can be found at https://github.com/NREL/WindSE/
+
 # WindSE: Wind Systems Engineering
 
 ## Simple Description:
